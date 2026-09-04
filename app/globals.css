@@ -1,26 +1,185 @@
 @import "tailwindcss";
 
+/*
+  Màu và font đều đi qua một lớp biến trung gian (--c-*, --f-*), nhờ vậy:
+  - màu đổi được lúc chạy từ nội dung ở /customize (đặt trên <html>)
+  - font đổi được theo từng khối (đặt trên wrapper của khối đó)
+  mà vẫn dùng class Tailwind bình thường: bg-base, text-gold, font-heading...
+*/
+@theme {
+  --color-base: var(--c-base);
+  --color-deep: var(--c-deep);
+  --color-paper: var(--c-paper);
+  --color-ink: var(--c-ink);
+  --color-cream: var(--c-cream);
+  --color-gold: var(--c-gold);
+  --color-sage: var(--c-sage);
+  --color-mist: var(--c-mist);
+
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-soft: cubic-bezier(0.55, 0, 0.35, 1);
+}
+
+/*
+  Cố tình KHÔNG khai báo font qua @theme.
+  Biến trong @theme nằm ở :root nên var() bị thay thế ngay tại :root — con cháu
+  chỉ kế thừa giá trị đã chốt, đặt lại --f-* ở khối con sẽ không có tác dụng.
+  Định nghĩa utility đọc thẳng --f-* thì mỗi khối mới dùng được font riêng.
+*/
+/* Lỗ răng cưa của dải phim. Hai hướng riêng vì gradient không đổi chiều theo
+   breakpoint được nếu viết inline. Khai bằng @utility nên dùng được md:sprockets-v. */
+@utility sprockets-h {
+  background-image: repeating-linear-gradient(
+    to right,
+    transparent 0 5px,
+    color-mix(in srgb, var(--c-cream) 80%, transparent) 5px 10px
+  );
+}
+@utility sprockets-v {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 5px,
+    color-mix(in srgb, var(--c-cream) 80%, transparent) 5px 10px
+  );
+}
+
+@utility font-heading {
+  font-family: var(--f-heading);
+}
+@utility font-body {
+  font-family: var(--f-body);
+}
+@utility font-accent {
+  font-family: var(--f-accent);
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Bị ghi đè bởi theme trong nội dung; đây là giá trị dự phòng. */
+  --c-base: #0d2e2a;
+  --c-deep: #071a18;
+  --c-paper: #f5ecdc;
+  --c-ink: #22322e;
+  --c-cream: #f0e7d6;
+  --c-gold: #dcb56a;
+  --c-sage: #86ac98;
+  --c-mist: #a7b7b0;
+
+  --f-heading: Georgia, serif;
+  --f-body: system-ui, sans-serif;
+  --f-accent: cursive;
+
+  color-scheme: dark;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  -webkit-tap-highlight-color: transparent;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  /* Safari trên iPhone tự phóng chữ khi xoay ngang nếu không chặn. */
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  min-height: 100svh;
+  background-color: var(--c-deep);
+  color: var(--c-cream);
+  font-family: var(--f-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* Chặn hiệu ứng kéo nảy của Safari làm lộ nền trắng phía sau. */
+  overscroll-behavior-y: none;
+  /* Xoay ngang iPhone thì tai thỏ ăn vào cạnh bên; chừa ra ở đây một lần
+     cho cả trang, thay vì mỗi phần tử tự lo. */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Người dùng bật "Giảm chuyển động" trong iOS/macOS thì tắt gần hết animation. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@layer utilities {
+  /* Đổ bóng mềm quanh mép màn hình, cho chiều sâu mà không tốn ảnh nền. */
+  .vignette::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+      120% 90% at 50% 40%,
+      transparent 35%,
+      color-mix(in srgb, var(--c-deep) 85%, transparent) 100%
+    );
+  }
+
+  /* Vân giấy nhẹ cho các khối màu be. */
+  .paper {
+    background-color: var(--c-paper);
+    background-image:
+      radial-gradient(
+        circle at 20% 15%,
+        color-mix(in srgb, var(--c-gold) 8%, transparent),
+        transparent 45%
+      ),
+      radial-gradient(
+        circle at 85% 80%,
+        color-mix(in srgb, var(--c-sage) 10%, transparent),
+        transparent 50%
+      );
+    color: var(--c-ink);
+  }
+
+  /* Giữ tỉ lệ chữ dễ đọc trên cả MacBook Air lẫn iPhone. */
+  .measure {
+    max-width: 62ch;
+  }
+
+  .text-balance-pretty {
+    text-wrap: pretty;
+  }
+
+  /* Ép trình duyệt dựng layer riêng cho phần tử động — mượt hơn trên Safari. */
+  .gpu {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+}
+
+/* Thanh cuộn mảnh, hợp tông, chỉ hiện trên desktop. */
+@media (pointer: fine) {
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--c-sage) 35%, transparent);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--c-gold) 45%, transparent);
+    background-clip: content-box;
+  }
+}
+
+::selection {
+  background: color-mix(in srgb, var(--c-gold) 40%, transparent);
+  color: var(--c-cream);
 }

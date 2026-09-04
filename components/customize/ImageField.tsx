@@ -1,0 +1,171 @@
+"use client";
+
+import { useId, useRef, useState } from "react";
+
+import {
+  ASPECT_CSS,
+  SLOT_ASPECT,
+  type ImageAsset,
+  type ImageSlot,
+} from "@/lib/content/schema";
+import { cx } from "@/lib/cx";
+import { isPlaceholder } from "@/lib/placeholder";
+
+import { CropDialog } from "./CropDialog";
+
+async function uploadBlob(blob: Blob): Promise<string> {
+  const form = new FormData();
+  form.append("file", new File([blob], "photo.jpg", { type: blob.type }));
+
+  const res = await fetch("/api/upload", { method: "POST", body: form });
+  if (!res.ok) {
+    const data = (await res.json().catch(() => null)) as {
+      error?: string;
+    } | null;
+    throw new Error(data?.error ?? "Không tải lên được");
+  }
+  const data = (await res.json()) as { url: string };
+  return data.url;
+}
+
+/**
+ * Một ô ảnh: chọn tệp -> cắt đúng tỉ lệ -> tải lên -> trả về ImageAsset.
+ * Tỉ lệ lấy từ SLOT_ASPECT nên không bao giờ lệch với chỗ sẽ hiển thị.
+ */
+export function ImageField({
+  slot,
+  value,
+  onChange,
+  onRemove,
+  label,
+}: {
+  slot: ImageSlot;
+  value: ImageAsset | null;
+  onChange: (image: ImageAsset) => void;
+  onRemove?: () => void;
+  label?: string;
+}) {
+  const aspect = SLOT_ASPECT[slot];
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [pending, setPending] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const altId = useId();
+
+  async function handleCropped(blob: Blob) {
+    setPending(null);
+    setBusy(true);
+    setError(null);
+    try {
+      const url = await uploadBlob(blob);
+      onChange({
+        id: value?.id ?? crypto.randomUUID(),
+        url,
+        alt: value && !isPlaceholder(value) ? value.alt : (label ?? "Ảnh"),
+        aspect,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không tải lên được");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const placeholder = isPlaceholder(value);
+
+  return (
+    <div className="space-y-2">
+      <div
+        className={cx(
+          "border-mist/20 bg-base/40 relative overflow-hidden rounded-lg border",
+          placeholder && "border-dashed",
+        )}
+        style={{ aspectRatio: ASPECT_CSS[aspect] }}
+      >
+        {value ? (
+          // Ảnh xem trước trong trình sửa: dùng <img> thường cho nhẹ, vì ảnh
+          // vừa tải lên chưa kịp qua bộ tối ưu của Next.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={value.url}
+            alt={value.alt}
+            className="size-full object-cover"
+          />
+        ) : (
+          <div className="text-mist/40 grid size-full place-items-center text-xs">
+            Chưa có ảnh
+          </div>
+        )}
+
+        {busy ? (
+          <div className="text-cream absolute inset-0 grid place-items-center bg-black/60 text-xs">
+            Đang tải lên...
+          </div>
+        ) : null}
+      </div>
+
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={busy}
+          className="border-mist/25 text-cream/85 hover:border-gold/50 hover:text-gold flex-1 rounded-lg border px-3 py-1.5 text-xs transition-colors disabled:opacity-50"
+        >
+          {value && !placeholder ? "Đổi ảnh" : "Chọn ảnh"}
+        </button>
+        {onRemove ? (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="border-mist/25 text-mist/70 rounded-lg border px-3 py-1.5 text-xs transition-colors hover:border-red-400/50 hover:text-red-300"
+          >
+            Xoá
+          </button>
+        ) : null}
+      </div>
+
+      {value ? (
+        <div>
+          <label htmlFor={altId} className="sr-only">
+            Mô tả ảnh
+          </label>
+          <input
+            id={altId}
+            type="text"
+            value={value.alt}
+            placeholder="Mô tả ảnh (cho trình đọc màn hình)"
+            onChange={(e) => onChange({ ...value, alt: e.target.value })}
+            className="border-mist/15 bg-base/40 text-cream/80 placeholder:text-mist/35 focus:border-gold/40 w-full rounded-lg border px-2.5 py-1.5 text-xs outline-none"
+          />
+        </div>
+      ) : null}
+
+      {placeholder ? (
+        <p className="text-[11px] text-amber-300/70">Đang là ảnh giữ chỗ</p>
+      ) : null}
+      {error ? <p className="text-[11px] text-red-300">{error}</p> : null}
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          // Xoá value để chọn lại đúng tệp vừa rồi vẫn kích hoạt onChange.
+          e.target.value = "";
+          if (file) setPending(file);
+        }}
+      />
+
+      {pending ? (
+        <CropDialog
+          file={pending}
+          aspect={aspect}
+          onCancel={() => setPending(null)}
+          onDone={handleCropped}
+        />
+      ) : null}
+    </div>
+  );
+}

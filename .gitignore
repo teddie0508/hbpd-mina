@@ -32,6 +32,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# trừ file mẫu — không chứa giá trị nào, dùng làm tài liệu
+!.env.example
 
 # vercel
 .vercel
@@ -39,3 +41,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# nội dung soạn ở máy (chỉ dùng khi dev)
+.data/
+
+# ảnh/nhạc tải lên khi chạy ở máy
+/public/uploads/
