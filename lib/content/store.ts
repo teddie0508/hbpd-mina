@@ -12,7 +12,14 @@ import { CONTENT_VERSION, type SiteContent } from "./schema";
 /** Nhãn để xoá cache nội dung mỗi khi bạn bấm Lưu ở /customize. */
 const CONTENT_TAG = "site-content";
 
-const BLOB_PATH = "content/site.json";
+/**
+ * Tiền tố riêng của dự án trong Blob store.
+ * Một store dùng chung được cho nhiều dự án, nên phải tách namespace —
+ * không thì dự án khác ghi trùng đường dẫn là đè mất nội dung của nhau.
+ */
+export const BLOB_PREFIX = "mina/";
+
+const BLOB_PATH = `${BLOB_PREFIX}content/site.json`;
 const LOCAL_PATH = path.join(process.cwd(), ".data", "content.json");
 
 /**

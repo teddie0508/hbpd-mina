@@ -4,7 +4,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 
 import { isEditor } from "@/lib/auth";
-import { storageMode } from "@/lib/content/store";
+import { BLOB_PREFIX, storageMode } from "@/lib/content/store";
 
 export const dynamic = "force-dynamic";
 
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
 
   try {
     if (storageMode() === "blob") {
-      const blob = await put(`uploads/${kind}/${name}`, file, {
+      const blob = await put(`${BLOB_PREFIX}uploads/${kind}/${name}`, file, {
         access: "public",
         contentType: file.type,
         addRandomSuffix: false,

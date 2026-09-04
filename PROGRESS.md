@@ -79,7 +79,9 @@ el.textContent = `
 
 - [ ] **Phase 7** — chạy thử thật trên Safari macOS + iOS: animation mở phong bì, mưa cánh hoa ở 120Hz, nhạc bật đúng lúc chạm, xoay ngang
 - [ ] Tạo Blob store trên Vercel, đặt `CUSTOMIZE_PASSWORD` + `AUTH_SECRET`, deploy
-- [ ] Xoá `.data/` trước khi deploy để đếm ngược thật có hiệu lực
+- [ ] Sau deploy lần đầu: đăng nhập /customize và bấm Lưu một lần, để nội dung được ghi lên Blob
+
+`.data/` đã gitignore nên không bao giờ lên Vercel — bản deploy tự dùng mặc định trong `defaults.ts`, tức đếm ngược tới 02/11/2026 có hiệu lực ngay.
 
 ## Chạy ở máy
 
