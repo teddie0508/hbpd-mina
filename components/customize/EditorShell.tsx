@@ -5,7 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-import { saveSiteContent } from "@/app/customize/(editor)/actions";
+import {
+  saveSiteContent,
+  stopViewingAsGuest,
+  viewAsGuest,
+} from "@/app/customize/(editor)/actions";
 import type { SiteContent } from "@/lib/content/schema";
 import { cx } from "@/lib/cx";
 
@@ -64,9 +68,12 @@ function formatTime(value: string | Date): string {
 export function EditorShell({
   initial,
   storage,
+  asGuest,
 }: {
   initial: SiteContent;
   storage: "blob" | "local";
+  /** Đang tạm bỏ đặc quyền để xem đúng những gì Mina thấy. */
+  asGuest: boolean;
 }) {
   const router = useRouter();
   const [draft, setDraft] = useState<SiteContent>(initial);
@@ -163,6 +170,22 @@ export function EditorShell({
             >
               Xem trang
             </Link>
+
+            {/* Đăng nhập thì mặc định đi xuyên qua khoá đếm ngược, nên cần
+                một lối tự đặt mình vào vị trí người ngoài để kiểm tra. */}
+            <form action={asGuest ? stopViewingAsGuest : viewAsGuest}>
+              <button
+                type="submit"
+                className={cx(
+                  "rounded-lg border px-3 py-1.5 text-xs transition-colors",
+                  asGuest
+                    ? "border-amber-400/50 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20"
+                    : "border-mist/25 text-cream/80 hover:border-gold/50 hover:text-gold",
+                )}
+              >
+                {asGuest ? "Đang xem như Mina — tắt" : "Xem như Mina"}
+              </button>
+            </form>
             <button
               type="button"
               onClick={logout}

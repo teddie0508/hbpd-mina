@@ -42,6 +42,19 @@ const SAMPLE = "Chúc mừng sinh nhật, Mina";
  */
 const VN_OFFSET = "+07:00";
 const isoToInput = (iso: string | null) => (iso ? iso.slice(0, 16) : "");
+
+/**
+ * Đọc lại thời điểm mở khoá theo kiểu 24 giờ.
+ * Ô nhập của trình duyệt hiển thị SA/CH, mà "12:00 CH" là 12 giờ TRƯA chứ
+ * không phải nửa đêm — rất dễ đặt lệch đúng 12 tiếng mà không hay.
+ * Tách thẳng từ chuỗi đã lưu, không dùng hàm định dạng theo múi giờ máy.
+ */
+function readableReveal(iso: string | null): string | null {
+  const m = iso?.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (!m) return null;
+  const [, y, mo, d, h, mi] = m;
+  return `${h}:${mi} ngày ${d}/${mo}/${y}`;
+}
 const inputToIso = (value: string) =>
   value ? `${value}:00${VN_OFFSET}` : null;
 
@@ -100,6 +113,19 @@ export function GeneralPanel({
             }
           />
         </Field>
+        {readableReveal(content.countdown.revealAt) ? (
+          <p className="border-gold/25 bg-gold/5 text-gold/90 -mt-1 rounded-lg border px-3 py-2 text-xs">
+            Sẽ mở lúc{" "}
+            <strong className="font-semibold">
+              {readableReveal(content.countdown.revealAt)}
+            </strong>{" "}
+            giờ Việt Nam.
+            <span className="text-mist/60 mt-1 block">
+              Đồng hồ 24 giờ. Nửa đêm là 00:00, giữa trưa là 12:00.
+            </span>
+          </p>
+        ) : null}
+
         <Toggle
           checked={content.countdown.revealAt === null}
           onChange={(off) =>
