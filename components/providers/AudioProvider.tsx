@@ -52,6 +52,10 @@ export function AudioProvider({
   const [unlocked, setUnlocked] = useState(false);
   const [volume, setVolumeState] = useState(music.volume);
   const [muted, setMuted] = useState(false);
+  /** Lần tải trang này có đang dở một bài không, để thử phát tiếp. */
+  const shouldResume = useRef(false);
+  /** Nghe dở tới giây thứ mấy, để phát tiếp đúng chỗ chứ không quay về đầu. */
+  const resumeTime = useRef(0);
 
   const current = tracks[index] ?? null;
 
@@ -70,6 +74,8 @@ export function AudioProvider({
         trackId?: string;
         volume?: number;
         muted?: boolean;
+        playing?: boolean;
+        time?: number;
       };
       if (typeof saved.trackId === "string") {
         const found = tracks.findIndex((t) => t.id === saved.trackId);
@@ -78,6 +84,8 @@ export function AudioProvider({
       }
       if (typeof saved.volume === "number") setVolumeState(saved.volume);
       if (typeof saved.muted === "boolean") setMuted(saved.muted);
+      if (saved.playing) shouldResume.current = true;
+      if (typeof saved.time === "number") resumeTime.current = saved.time;
     } catch {
       // sessionStorage bị chặn (chế độ riêng tư) — bỏ qua, không ảnh hưởng gì.
     }
@@ -90,16 +98,72 @@ export function AudioProvider({
     if (tracks.length > 0 && index >= tracks.length) setIndex(0);
   }, [tracks.length, index]);
 
-  useEffect(() => {
+  const persist = useCallback(() => {
     try {
       sessionStorage.setItem(
         STATE_KEY,
-        JSON.stringify({ trackId: current?.id, volume, muted }),
+        JSON.stringify({
+          trackId: current?.id,
+          volume,
+          muted,
+          playing,
+          time: audioRef.current?.currentTime ?? 0,
+        }),
       );
     } catch {
       /* bỏ qua */
     }
-  }, [current?.id, volume, muted]);
+  }, [current?.id, volume, muted, playing]);
+
+  useEffect(() => {
+    persist();
+  }, [persist]);
+
+  // Ghi lại vị trí đang nghe vài giây một lần. Không bám sự kiện timeupdate vì
+  // nó bắn liên tục mấy lần mỗi giây, ghi từng ấy lần là phí.
+  useEffect(() => {
+    if (!playing) return;
+    const id = window.setInterval(persist, 2000);
+    return () => window.clearInterval(id);
+  }, [playing, persist]);
+
+  // Nếu trang vừa bị tải lại giữa chừng — hay gặp nhất là khi có bản deploy
+  // mới, Next thấy lệch phiên bản nên buộc phải tải lại toàn trang — thì thử
+  // phát tiếp bài đang dở. Không có cách nào giữ được âm thanh qua một lần
+  // tải lại, nên đây là mức tốt nhất có thể làm.
+  //
+  // Trình duyệt có quyền từ chối vì chưa có thao tác nào của người xem trong
+  // lần tải này. Bị từ chối thì cứ để tạm dừng, cô ấy bấm nút phát là xong.
+  useEffect(() => {
+    if (!shouldResume.current) return;
+    if (!current) return;
+    shouldResume.current = false;
+
+    const el = audioRef.current;
+    if (!el) return;
+
+    // Nhảy về đúng chỗ đang nghe dở. Phải đợi trình duyệt đọc xong thông tin
+    // bài hát, đặt currentTime sớm quá là không ăn.
+    const seek = () => {
+      try {
+        if (resumeTime.current > 0) el.currentTime = resumeTime.current;
+      } catch {
+        /* bỏ qua */
+      }
+    };
+    if (el.readyState >= 1) seek();
+    else el.addEventListener("loadedmetadata", seek, { once: true });
+
+    void el
+      .play()
+      .then(() => {
+        setPlaying(true);
+        setUnlocked(true);
+      })
+      .catch(() => {
+        // Bị chặn: giữ nguyên trạng thái tạm dừng, không báo lỗi gì cho người xem.
+      });
+  }, [current]);
 
   useEffect(() => {
     const el = audioRef.current;
