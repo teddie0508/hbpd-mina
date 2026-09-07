@@ -336,3 +336,92 @@ export function SectionCard({
     </section>
   );
 }
+
+/** Múi giờ cố định của mốc mở khoá. */
+const VN_OFFSET = "+07:00";
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+/**
+ * Chọn ngày giờ mở khoá, **luôn theo đồng hồ 24 giờ**.
+ *
+ * Không dùng <input type="datetime-local"> nữa: nó hiển thị theo ngôn ngữ của
+ * máy, và ở locale 12 giờ thì nửa đêm hiện ra là "12:00 SA" còn giữa trưa là
+ * "12:00 CH" — hai mốc cách nhau 12 tiếng mà nhìn gần như y hệt, cực dễ đặt
+ * nhầm. Giờ và phút tách thành ô chọn 00–23 nên không còn chỗ để hiểu sai.
+ */
+export function RevealDateTime({
+  value,
+  onChange,
+  disabled = false,
+}: {
+  /** ISO kèm offset +07:00, hoặc null khi tắt đếm ngược. */
+  value: string | null;
+  onChange: (iso: string) => void;
+  disabled?: boolean;
+}) {
+  const parts = value?.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/);
+  const date = parts?.[1] ?? "";
+  const hour = parts?.[2] ?? "00";
+  const minute = parts?.[3] ?? "00";
+
+  const emit = (d: string, h: string, m: string) => {
+    if (!d) return;
+    onChange(`${d}T${h}:${m}:00${VN_OFFSET}`);
+  };
+
+  const selectClass = cx(
+    INPUT,
+    "w-auto shrink-0 tabular-nums",
+    disabled && "opacity-40",
+  );
+
+  return (
+    <div className="flex flex-wrap items-end gap-2">
+      <label className="min-w-40 flex-1">
+        <span className="text-mist/60 mb-1 block text-[11px]">Ngày</span>
+        <input
+          type="date"
+          value={date}
+          disabled={disabled}
+          onChange={(e) => emit(e.target.value, hour, minute)}
+          className={cx(INPUT, disabled && "opacity-40")}
+        />
+      </label>
+
+      <label>
+        <span className="text-mist/60 mb-1 block text-[11px]">Giờ</span>
+        <select
+          value={hour}
+          disabled={disabled}
+          onChange={(e) => emit(date, e.target.value, minute)}
+          className={selectClass}
+        >
+          {Array.from({ length: 24 }, (_, h) => (
+            <option key={h} value={pad2(h)}>
+              {pad2(h)}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <span className="text-mist/50 pb-2.5 text-sm">:</span>
+
+      <label>
+        <span className="text-mist/60 mb-1 block text-[11px]">Phút</span>
+        <select
+          value={minute}
+          disabled={disabled}
+          onChange={(e) => emit(date, hour, e.target.value)}
+          className={selectClass}
+        >
+          {Array.from({ length: 60 }, (_, m) => (
+            <option key={m} value={pad2(m)}>
+              {pad2(m)}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
+}

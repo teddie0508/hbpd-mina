@@ -27,6 +27,7 @@ import {
   ColorInput,
   Field,
   TypographyPicker,
+  RevealDateTime,
   SectionCard,
   Slider,
   TextArea,
@@ -35,13 +36,6 @@ import {
 } from "./fields";
 
 const SAMPLE = "Chúc mừng sinh nhật, Mina";
-
-/**
- * Ngày giờ luôn được lưu theo giờ Việt Nam, bất kể máy bạn đang đặt múi giờ nào.
- * Nhờ vậy đổi máy hay đi nước ngoài cũng không làm lệch thời điểm mở khoá.
- */
-const VN_OFFSET = "+07:00";
-const isoToInput = (iso: string | null) => (iso ? iso.slice(0, 16) : "");
 
 /**
  * Đọc lại thời điểm mở khoá theo kiểu 24 giờ.
@@ -55,9 +49,6 @@ function readableReveal(iso: string | null): string | null {
   const [, y, mo, d, h, mi] = m;
   return `${h}:${mi} ngày ${d}/${mo}/${y}`;
 }
-const inputToIso = (value: string) =>
-  value ? `${value}:00${VN_OFFSET}` : null;
-
 type Patch<T> = (patch: Partial<T>) => void;
 
 export function GeneralPanel({
@@ -104,13 +95,14 @@ export function GeneralPanel({
         title="Đếm ngược"
         description="Trước thời điểm này, ai vào link cũng chỉ thấy đồng hồ đếm ngược, kể cả khi gõ thẳng /hub hay /message. Riêng bạn thì cứ đăng nhập ở đây là xem trước được hết."
       >
-        <Field label="Mở khoá lúc (giờ Việt Nam)">
-          <TextInput
-            type="datetime-local"
-            value={isoToInput(content.countdown.revealAt)}
-            onChange={(value) =>
-              patchCountdown({ revealAt: inputToIso(value) })
-            }
+        <Field
+          label="Mở khoá lúc (giờ Việt Nam)"
+          hint="Giờ theo đồng hồ 24 tiếng: 00 là nửa đêm, 12 là giữa trưa."
+        >
+          <RevealDateTime
+            value={content.countdown.revealAt}
+            disabled={content.countdown.revealAt === null}
+            onChange={(revealAt) => patchCountdown({ revealAt })}
           />
         </Field>
         {readableReveal(content.countdown.revealAt) ? (
