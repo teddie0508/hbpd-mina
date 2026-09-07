@@ -73,10 +73,17 @@ function mergeIntoDefaults(saved: unknown): SiteContent {
 
 async function readRaw(): Promise<unknown | null> {
   if (usingBlob()) {
+    // list() gọi thẳng API của Blob nên luôn trả về thông tin mới nhất.
     const { blobs } = await list({ prefix: BLOB_PATH, limit: 10 });
     const found = blobs.find((b) => b.pathname === BLOB_PATH);
     if (!found) return null;
-    const res = await fetch(found.url, { cache: "no-store" });
+
+    // Vì ghi đè cùng một đường dẫn nên URL không bao giờ đổi, mà Blob phục vụ
+    // file qua CDN. `cache: "no-store"` chỉ chặn cache phía Next, không xoá
+    // được bản cũ đang nằm ở CDN edge — nên vừa lưu xong đọc lại vẫn ra nội
+    // dung cũ. Gắn thêm dấu thời gian tải lên để mỗi lần lưu là một URL khác.
+    const stamp = new Date(found.uploadedAt).getTime();
+    const res = await fetch(`${found.url}?v=${stamp}`, { cache: "no-store" });
     if (!res.ok) return null;
     return (await res.json()) as unknown;
   }
@@ -114,6 +121,15 @@ export const getContent = cache(async (): Promise<SiteContent> => {
 });
 
 export async function saveContent(next: SiteContent): Promise<SiteContent> {
+  // Trên Vercel, filesystem chỉ đọc. Không có token Blob mà cứ ghi file thì
+  // sẽ ném lỗi EROFS rất khó hiểu, nên chặn sớm và nói thẳng nguyên nhân.
+  if (!usingBlob() && process.env.NODE_ENV === "production") {
+    throw new Error(
+      "Chưa nối Blob Storage (thiếu BLOB_READ_WRITE_TOKEN), nên không lưu được. " +
+        "Vào Vercel → Storage → Connect, nhớ tick ô tạo read-write token, rồi Redeploy.",
+    );
+  }
+
   const payload: SiteContent = {
     ...next,
     version: CONTENT_VERSION,

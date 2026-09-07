@@ -29,6 +29,35 @@ const TABS = [
 
 type TabKey = (typeof TABS)[number]["key"];
 
+type SaveState =
+  | { kind: "idle" }
+  | { kind: "saving" }
+  | { kind: "saved"; at: Date; storage: "blob" | "local" }
+  | { kind: "failed"; reason: string };
+
+/**
+ * So sánh bỏ qua `updatedAt`.
+ * Trường đó do máy chủ tự đóng dấu mỗi lần lưu, nên nếu so cả nó thì vừa lưu
+ * xong bản nháp đã lại khác bản trên máy chủ — nút lúc nào cũng báo "chưa lưu"
+ * và không cách nào biết được đã lưu thành công hay chưa.
+ */
+function withoutTimestamp(content: SiteContent): string {
+  const { updatedAt: _ignored, ...rest } = content;
+  return JSON.stringify(rest);
+}
+
+function formatTime(value: string | Date): string {
+  const date = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    day: "2-digit",
+    month: "2-digit",
+  });
+}
+
 export function EditorShell({
   initial,
   storage,
@@ -39,16 +68,15 @@ export function EditorShell({
   const router = useRouter();
   const [draft, setDraft] = useState<SiteContent>(initial);
   const [tab, setTab] = useState<TabKey>("general");
-  const [saving, setSaving] = useState(false);
-  const [savedAt, setSavedAt] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [save, setSave] = useState<SaveState>({ kind: "idle" });
 
-  const dirty = JSON.stringify(draft) !== JSON.stringify(initial);
+  const dirty = withoutTimestamp(draft) !== withoutTimestamp(initial);
 
-  const patch = useCallback(
-    (next: Partial<SiteContent>) => setDraft((d) => ({ ...d, ...next })),
-    [],
-  );
+  const patch = useCallback((next: Partial<SiteContent>) => {
+    setDraft((d) => ({ ...d, ...next }));
+    // Vừa sửa tiếp thì thông báo cũ không còn đúng nữa.
+    setSave((s) => (s.kind === "saved" ? { kind: "idle" } : s));
+  }, []);
 
   // Nhắc trước khi đóng tab nếu còn thay đổi chưa lưu.
   useEffect(() => {
@@ -58,29 +86,48 @@ export function EditorShell({
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
 
-  async function save() {
-    if (saving) return;
-    setSaving(true);
-    setError(null);
+  async function handleSave() {
+    if (save.kind === "saving") return;
+    setSave({ kind: "saving" });
+
     try {
       const res = await fetch("/api/content", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(draft),
       });
+
+      const data = (await res.json().catch(() => null)) as {
+        error?: string;
+        content?: SiteContent;
+        storage?: "blob" | "local";
+      } | null;
+
       if (!res.ok) {
-        const data = (await res.json().catch(() => null)) as {
-          error?: string;
-        } | null;
-        throw new Error(data?.error ?? "Không lưu được");
+        setSave({
+          kind: "failed",
+          reason: data?.error ?? `Máy chủ trả về lỗi ${res.status}`,
+        });
+        return;
       }
-      setSavedAt(new Date().toLocaleTimeString("vi-VN"));
-      // Đồng bộ lại initial để cờ "chưa lưu" tắt đi.
+
+      // Nhận lại dấu thời gian của máy chủ, để bản nháp và bản đã lưu khớp nhau.
+      if (data?.content?.updatedAt) {
+        const stamp = data.content.updatedAt;
+        setDraft((d) => ({ ...d, updatedAt: stamp }));
+      }
+
+      setSave({
+        kind: "saved",
+        at: new Date(),
+        storage: data?.storage ?? storage,
+      });
       router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Không lưu được");
-    } finally {
-      setSaving(false);
+    } catch {
+      setSave({
+        kind: "failed",
+        reason: "Không gọi được máy chủ — kiểm tra kết nối mạng rồi thử lại.",
+      });
     }
   }
 
@@ -100,9 +147,12 @@ export function EditorShell({
             </h1>
             <p className="text-mist/55 mt-0.5 text-[11px]">
               {storage === "blob"
-                ? "Đang lưu lên Vercel Blob"
-                : "Đang lưu vào .data/content.json ở máy"}
-              {savedAt ? ` · đã lưu lúc ${savedAt}` : ""}
+                ? "Lưu lên Vercel Blob"
+                : "Lưu vào .data/content.json ở máy"}
+              {" · "}
+              {/* Dấu thời gian của bản máy chủ ĐANG phục vụ. Nếu bấm Lưu xong
+                  mà số này không đổi thì tức là nội dung mới chưa tới nơi. */}
+              bản trên máy chủ: {formatTime(initial.updatedAt)}
             </p>
           </div>
 
@@ -123,11 +173,15 @@ export function EditorShell({
             </button>
             <button
               type="button"
-              onClick={save}
-              disabled={saving || !dirty}
+              onClick={handleSave}
+              disabled={save.kind === "saving" || !dirty}
               className="bg-gold text-deep hover:bg-gold/90 rounded-lg px-4 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {saving ? "Đang lưu..." : dirty ? "Lưu thay đổi" : "Đã lưu"}
+              {save.kind === "saving"
+                ? "Đang lưu..."
+                : dirty
+                  ? "Lưu thay đổi"
+                  : "Không có thay đổi"}
             </button>
           </div>
         </div>
@@ -151,14 +205,7 @@ export function EditorShell({
         </nav>
       </header>
 
-      {error ? (
-        <p
-          role="alert"
-          className="mt-4 rounded-lg border border-red-400/40 bg-red-400/10 px-3 py-2 text-sm text-red-200"
-        >
-          {error}
-        </p>
-      ) : null}
+      <SaveBanner state={save} onDismiss={() => setSave({ kind: "idle" })} />
 
       <main className="mt-5">
         {tab === "general" ? (
@@ -201,6 +248,81 @@ export function EditorShell({
           />
         ) : null}
       </main>
+    </div>
+  );
+}
+
+/** Báo rõ đã lưu được hay không, và nếu không thì vì sao. */
+function SaveBanner({
+  state,
+  onDismiss,
+}: {
+  state: SaveState;
+  onDismiss: () => void;
+}) {
+  if (state.kind === "idle") return null;
+
+  if (state.kind === "saving") {
+    return (
+      <p className="border-mist/25 bg-base/50 text-mist/80 mt-4 rounded-lg border px-3.5 py-2.5 text-sm">
+        Đang lưu...
+      </p>
+    );
+  }
+
+  if (state.kind === "saved") {
+    return (
+      <div
+        role="status"
+        className="mt-4 flex items-start gap-3 rounded-lg border border-emerald-400/40 bg-emerald-400/10 px-3.5 py-2.5"
+      >
+        <span aria-hidden className="mt-0.5 text-emerald-300">
+          ✓
+        </span>
+        <div className="min-w-0 flex-1 text-sm text-emerald-100">
+          <p className="font-medium">
+            Đã lưu thành công lúc {formatTime(state.at)}
+          </p>
+          <p className="mt-0.5 text-[12px] text-emerald-200/70">
+            {state.storage === "blob"
+              ? "Nội dung đã ghi lên Vercel Blob. Mở lại trang chính là thấy ngay."
+              : "Đã ghi vào .data/content.json trên máy này."}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label="Đóng thông báo"
+          className="shrink-0 text-emerald-200/60 transition-colors hover:text-emerald-100"
+        >
+          ✕
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      role="alert"
+      className="mt-4 flex items-start gap-3 rounded-lg border border-red-400/40 bg-red-400/10 px-3.5 py-2.5"
+    >
+      <span aria-hidden className="mt-0.5 text-red-300">
+        !
+      </span>
+      <div className="min-w-0 flex-1 text-sm text-red-100">
+        <p className="font-medium">Lưu thất bại</p>
+        <p className="mt-0.5 text-[12px] leading-relaxed text-red-200/80">
+          {state.reason}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onDismiss}
+        aria-label="Đóng thông báo"
+        className="shrink-0 text-red-200/60 transition-colors hover:text-red-100"
+      >
+        ✕
+      </button>
     </div>
   );
 }

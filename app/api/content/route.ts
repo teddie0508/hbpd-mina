@@ -40,9 +40,15 @@ export async function PUT(request: Request) {
 
   try {
     const saved = await saveContent(incoming);
-    return NextResponse.json({ content: saved });
+    return NextResponse.json({ content: saved, storage: storageMode() });
   } catch (error) {
     console.error("[content] lưu thất bại:", error);
-    return NextResponse.json({ error: "Không lưu được" }, { status: 500 });
+    // Đây là endpoint riêng của một người đã đăng nhập, nên trả nguyên lý do
+    // ra giao diện có ích hơn nhiều so với một câu "Không lưu được" chung chung.
+    const reason =
+      error instanceof Error && error.message
+        ? error.message
+        : "Lỗi không rõ nguyên nhân";
+    return NextResponse.json({ error: reason }, { status: 500 });
   }
 }
