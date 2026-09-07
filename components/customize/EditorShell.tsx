@@ -70,10 +70,19 @@ export function EditorShell({
 }) {
   const router = useRouter();
   const [draft, setDraft] = useState<SiteContent>(initial);
+  /**
+   * Bản mới nhất mà máy chủ xác nhận đã ghi.
+   *
+   * Trước đây cờ "chưa lưu" so bản nháp với bản ĐỌC LẠI từ máy chủ. Lần đọc
+   * đó có thể còn trễ một nhịp, nên lưu xong nút vẫn báo "Lưu thay đổi" và
+   * phải bấm lần hai mới thấy khớp. Giờ lấy thẳng bản mà chính lệnh ghi trả
+   * về làm mốc, không phụ thuộc vào việc đọc lại nữa.
+   */
+  const [saved, setSaved] = useState<SiteContent>(initial);
   const [tab, setTab] = useState<TabKey>("general");
   const [save, setSave] = useState<SaveState>({ kind: "idle" });
 
-  const dirty = withoutTimestamp(draft) !== withoutTimestamp(initial);
+  const dirty = withoutTimestamp(draft) !== withoutTimestamp(saved);
 
   const patch = useCallback((next: Partial<SiteContent>) => {
     setDraft((d) => ({ ...d, ...next }));
@@ -103,9 +112,9 @@ export function EditorShell({
         return;
       }
 
-      // Nhận lại dấu thời gian của máy chủ, để bản nháp và bản đã lưu khớp nhau.
-      if (result.updatedAt) {
-        const stamp = result.updatedAt;
+      if (result.content) {
+        const stamp = result.content.updatedAt;
+        setSaved(result.content);
         setDraft((d) => ({ ...d, updatedAt: stamp }));
       }
 
@@ -114,7 +123,6 @@ export function EditorShell({
         at: new Date(),
         storage: result.storage ?? storage,
       });
-      router.refresh();
     } catch {
       setSave({
         kind: "failed",
@@ -142,15 +150,14 @@ export function EditorShell({
                 ? "Lưu lên Vercel Blob"
                 : "Lưu vào .data/content.json ở máy"}
               {" · "}
-              {/* Dấu thời gian của bản máy chủ ĐANG phục vụ. Nếu bấm Lưu xong
-                  mà số này không đổi thì tức là nội dung mới chưa tới nơi. */}
-              bản trên máy chủ: {formatTime(initial.updatedAt)}
+              {/* Lần ghi gần nhất mà máy chủ xác nhận. */}
+              đã lưu: {formatTime(saved.updatedAt)}
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             <Link
-              href="/?preview=1"
+              href="/"
               target="_blank"
               className="border-mist/25 text-cream/80 hover:border-gold/50 hover:text-gold rounded-lg border px-3 py-1.5 text-xs transition-colors"
             >

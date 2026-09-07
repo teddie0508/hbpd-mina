@@ -10,7 +10,8 @@ export interface SaveResult {
   ok: boolean;
   /** Lý do thất bại, viết cho người đọc chứ không phải cho máy. */
   error?: string;
-  updatedAt?: string;
+  /** Bản máy chủ vừa ghi. Trình sửa lấy đúng bản này làm mốc so sánh. */
+  content?: SiteContent;
   storage?: "blob" | "local";
 }
 
@@ -46,7 +47,7 @@ export async function saveSiteContent(
 
     return {
       ok: true,
-      updatedAt: saved.updatedAt,
+      content: saved,
       storage: storageMode(),
     };
   } catch (error) {

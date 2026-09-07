@@ -1,26 +1,14 @@
 import { Landing } from "@/components/landing/Landing";
-import { isEditor } from "@/lib/auth";
 import { getContent } from "@/lib/content/store";
+import { isLocked } from "@/lib/gate";
 
-// Phụ thuộc vào thời điểm hiện tại và cookie đăng nhập, nên không cache được.
+// Phụ thuộc vào giờ hiện tại và cookie đăng nhập, nên không cache được.
 export const dynamic = "force-dynamic";
 
-export default async function LandingPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const [content, params] = await Promise.all([getContent(), searchParams]);
+export default async function LandingPage() {
+  const [content, locked] = await Promise.all([getContent(), isLocked()]);
 
-  // ?preview=1 cho phép bạn xem trước khi chưa tới ngày — nhưng phải đã đăng nhập,
-  // để người khác đoán được link cũng không mở sớm được.
-  const canPreview = params.preview === "1" && (await isEditor());
-
-  const revealAt = content.countdown.revealAt;
-  const lockedOnServer =
-    !canPreview &&
-    Boolean(revealAt) &&
-    Date.now() < new Date(revealAt!).getTime();
-
-  return <Landing content={content} lockedOnServer={lockedOnServer} />;
+  // Không còn cần ?preview=1: cứ đăng nhập ở /customize là xem trước được
+  // toàn bộ trang, kể cả các trang trong.
+  return <Landing content={content} lockedOnServer={locked} />;
 }

@@ -89,7 +89,7 @@ export function GeneralPanel({
 
       <SectionCard
         title="Đếm ngược"
-        description="Trước thời điểm này, ai vào link cũng chỉ thấy đồng hồ đếm ngược. Bạn xem trước được bằng /?preview=1."
+        description="Trước thời điểm này, ai vào link cũng chỉ thấy đồng hồ đếm ngược, kể cả khi gõ thẳng /hub hay /message. Riêng bạn thì cứ đăng nhập ở đây là xem trước được hết."
       >
         <Field label="Mở khoá lúc (giờ Việt Nam)">
           <TextInput
