@@ -34,7 +34,7 @@ interface AudioApi {
 
 const AudioContext = createContext<AudioApi | null>(null);
 
-/** Nhớ bài đang nghe khi chuyển trang bằng cách tải lại (hiếm, nhưng đỡ khó chịu). */
+/** Nhớ bài đang nghe khi tải lại trang (hiếm, nhưng đỡ khó chịu). */
 const STATE_KEY = "mina.audio";
 
 export function AudioProvider({
@@ -56,33 +56,50 @@ export function AudioProvider({
   const current = tracks[index] ?? null;
 
   // Khôi phục bài và âm lượng sau khi tải lại trang.
+  //
+  // Ghi nhớ theo ID của bài, KHÔNG phải theo vị trí. Trước đây lưu vị trí nên
+  // sau khi đổi thứ tự ở /customize, trình duyệt khôi phục đúng "vị trí số N"
+  // mà chỗ đó giờ đã là bài khác — nhìn như thay đổi thứ tự không có tác dụng.
+  // Xoá bớt bài còn tệ hơn: vị trí cũ trỏ ra ngoài danh sách, current thành
+  // null và cả trình phát biến mất.
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(STATE_KEY);
       if (!raw) return;
       const saved = JSON.parse(raw) as {
-        index?: number;
+        trackId?: string;
         volume?: number;
         muted?: boolean;
       };
-      if (typeof saved.index === "number") setIndex(saved.index);
+      if (typeof saved.trackId === "string") {
+        const found = tracks.findIndex((t) => t.id === saved.trackId);
+        // Bài cũ bị xoá thì quay về bài đầu, không để trỏ vào chỗ trống.
+        setIndex(found >= 0 ? found : 0);
+      }
       if (typeof saved.volume === "number") setVolumeState(saved.volume);
       if (typeof saved.muted === "boolean") setMuted(saved.muted);
     } catch {
       // sessionStorage bị chặn (chế độ riêng tư) — bỏ qua, không ảnh hưởng gì.
     }
+    // Chỉ chạy một lần lúc mở trang; về sau người nghe tự chọn bài.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Danh sách ngắn lại mà con trỏ còn ở xa thì kéo về đầu, tránh mất trình phát.
+  useEffect(() => {
+    if (tracks.length > 0 && index >= tracks.length) setIndex(0);
+  }, [tracks.length, index]);
 
   useEffect(() => {
     try {
       sessionStorage.setItem(
         STATE_KEY,
-        JSON.stringify({ index, volume, muted }),
+        JSON.stringify({ trackId: current?.id, volume, muted }),
       );
     } catch {
       /* bỏ qua */
     }
-  }, [index, volume, muted]);
+  }, [current?.id, volume, muted]);
 
   useEffect(() => {
     const el = audioRef.current;
