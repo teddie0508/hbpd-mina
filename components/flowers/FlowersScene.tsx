@@ -38,7 +38,7 @@ export function FlowersScene({ content }: { content: FlowersContent }) {
 
   return (
     <main
-      style={fontVars(content.fonts)}
+      style={fontVars(content.fonts, content.typography)}
       className="vignette relative min-h-svh overflow-hidden px-5 pt-20 pb-[max(4rem,env(safe-area-inset-bottom))] sm:px-8"
     >
       <Ambience />
@@ -57,7 +57,7 @@ export function FlowersScene({ content }: { content: FlowersContent }) {
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-              className="font-heading text-cream text-center text-[clamp(2rem,7vw,3.2rem)] leading-tight text-balance"
+              className="font-heading text-cream text-center text-[calc(clamp(2rem,7vw,3.2rem)*var(--fz-heading,1))] leading-tight text-balance"
             >
               {content.heading}
             </motion.h1>
@@ -73,7 +73,7 @@ export function FlowersScene({ content }: { content: FlowersContent }) {
                     delay: 0.2 + i * 0.12,
                     ease: [0.22, 1, 0.36, 1],
                   }}
-                  className="font-body text-cream/80 text-center text-[clamp(0.95rem,3.2vw,1.08rem)] leading-[1.8] text-pretty"
+                  className="font-body text-cream/80 text-center text-[calc(clamp(0.95rem,3.2vw,1.08rem)*var(--fz-body,1))] leading-[1.8] text-pretty"
                 >
                   {paragraph}
                 </motion.p>
@@ -127,7 +127,7 @@ export function FlowersScene({ content }: { content: FlowersContent }) {
               : { duration: 2, delay: 1.5 }
           }
           whileHover={{ opacity: 1 }}
-          className="text-cream font-accent hover:text-gold fixed right-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 p-2 text-[clamp(0.7rem,2.4vw,0.85rem)] tracking-wide italic transition-colors sm:right-5 sm:bottom-[max(1.25rem,env(safe-area-inset-bottom))]"
+          className="text-cream font-accent hover:text-gold fixed right-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 p-2 text-[calc(clamp(0.7rem,2.4vw,0.85rem)*var(--fz-accent,1))] tracking-wide italic transition-colors sm:right-5 sm:bottom-[max(1.25rem,env(safe-area-inset-bottom))]"
         >
           {content.secretLabel}
         </motion.button>
@@ -170,7 +170,7 @@ function Finale({ content }: { content: FlowersContent }) {
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, delay: 0.9, ease: [0.22, 1, 0.36, 1] }}
-        className="font-body text-cream/85 measure mt-10 text-center text-[clamp(1rem,3.4vw,1.15rem)] leading-[1.85] text-pretty"
+        className="font-body text-cream/85 measure mt-10 text-center text-[calc(clamp(1rem,3.4vw,1.15rem)*var(--fz-body,1))] leading-[1.85] text-pretty"
       >
         {content.finale.caption}
       </motion.p>
@@ -179,7 +179,7 @@ function Finale({ content }: { content: FlowersContent }) {
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1, delay: 1.7, ease: [0.22, 1, 0.36, 1] }}
-        className="font-heading text-gold mt-10 text-center text-[clamp(1.7rem,6.5vw,2.8rem)] leading-tight text-balance"
+        className="font-heading text-gold mt-10 text-center text-[calc(clamp(1.7rem,6.5vw,2.8rem)*var(--fz-heading,1))] leading-tight text-balance"
       >
         {content.finale.closing}
       </motion.p>

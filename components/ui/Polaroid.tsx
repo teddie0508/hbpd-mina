@@ -66,7 +66,7 @@ export function Polaroid({
       </div>
 
       {caption ? (
-        <figcaption className="font-accent text-ink/70 absolute inset-x-[6%] bottom-[3.5%] text-center text-[clamp(0.7rem,2.4vw,0.95rem)] leading-tight">
+        <figcaption className="font-accent text-ink/70 absolute inset-x-[6%] bottom-[3.5%] text-center text-[calc(clamp(0.7rem,2.4vw,0.95rem)*var(--fz-accent,1))] leading-tight">
           {caption}
         </figcaption>
       ) : null}

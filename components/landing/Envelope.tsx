@@ -211,7 +211,7 @@ export function Envelope({
             }}
           >
             <span
-              className="font-accent text-[clamp(0.7rem,2.6vw,1.05rem)] leading-none"
+              className="font-accent text-[calc(clamp(0.7rem,2.6vw,1.05rem)*var(--fz-accent,1))] leading-none"
               style={{
                 color: "color-mix(in srgb, var(--c-ink) 55%, var(--c-gold))",
               }}

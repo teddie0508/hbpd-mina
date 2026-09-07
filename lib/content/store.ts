@@ -101,9 +101,18 @@ async function readRaw(): Promise<unknown | null> {
  * hai lượt trước khi trả HTML, và các trang buộc phải render động nên
  * `prefetch` không nạp trước được — chuyển cảnh sẽ khựng khi mạng yếu.
  */
-const readCached = unstable_cache(
-  async (): Promise<SiteContent> => mergeIntoDefaults(await readRaw()),
-  ["site-content"],
+/**
+ * CHỈ cache phần đọc dữ liệu thô, không cache kết quả đã trộn với defaults.
+ *
+ * Trộn xong rồi mới cache là một cái bẫy: thêm field mới vào schema thì bản
+ * nằm sẵn trong cache vẫn là bản tính theo defaults cũ, nên vừa deploy xong
+ * trang sẽ nhận object thiếu field và văng lỗi, mãi tới khi có ai bấm Lưu.
+ * Trộn lại mỗi lần đọc thì field mới luôn có mặt ngay, mà vẫn không tốn thêm
+ * lượt gọi mạng nào.
+ */
+const readRawCached = unstable_cache(
+  async (): Promise<unknown | null> => readRaw(),
+  ["site-content", String(CONTENT_VERSION)],
   { tags: [CONTENT_TAG] },
 );
 
@@ -113,7 +122,7 @@ const readCached = unstable_cache(
  */
 export const getContent = cache(async (): Promise<SiteContent> => {
   try {
-    return await readCached();
+    return mergeIntoDefaults(await readRawCached());
   } catch (err) {
     console.error("[content] không đọc được bản lưu, dùng mặc định:", err);
     return cloneDefaults();

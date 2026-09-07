@@ -15,14 +15,14 @@ export function MemoriesScene({ content }: { content: MemoriesContent }) {
 
   return (
     <main
-      style={fontVars(content.fonts)}
+      style={fontVars(content.fonts, content.typography)}
       className="vignette relative min-h-svh overflow-x-hidden px-5 pt-20 pb-[max(4rem,env(safe-area-inset-bottom))] sm:px-8"
     >
       <Ambience />
 
       <div className="relative z-10 mx-auto w-full max-w-5xl">
         <Reveal from="none" duration={1}>
-          <h1 className="font-heading text-cream text-center text-[clamp(2rem,7.5vw,3.6rem)] leading-tight text-balance">
+          <h1 className="font-heading text-cream text-center text-[calc(clamp(2rem,7.5vw,3.6rem)*var(--fz-heading,1))] leading-tight text-balance">
             {content.heading}
           </h1>
         </Reveal>
@@ -40,7 +40,7 @@ export function MemoriesScene({ content }: { content: MemoriesContent }) {
               {paragraphs.map((paragraph, i) => (
                 <p
                   key={i}
-                  className="font-body text-ink/85 text-center text-[clamp(0.98rem,3.2vw,1.1rem)] leading-[1.8] text-pretty"
+                  className="font-body text-ink/85 text-center text-[calc(clamp(0.98rem,3.2vw,1.1rem)*var(--fz-body,1))] leading-[1.8] text-pretty"
                 >
                   {paragraph}
                 </p>

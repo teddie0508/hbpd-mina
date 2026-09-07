@@ -51,6 +51,34 @@ export interface FontSet {
   accent: string;
 }
 
+/** Cách trình bày một vai trò chữ: to nhỏ, đậm nhạt, nghiêng hay không. */
+export interface TypeStyle {
+  /**
+   * Hệ số nhân cỡ chữ so với thiết kế gốc. 1 = giữ nguyên.
+   * Dùng hệ số thay vì px tuyệt đối để chữ vẫn co giãn theo bề ngang màn hình:
+   * mỗi chỗ đã có sẵn một clamp() riêng, hệ số chỉ nhân lên trên đó.
+   */
+  scale: number;
+  /** 300..800. Font không có sẵn nét đó thì trình duyệt tự làm đậm/mảnh giả. */
+  weight: number;
+  italic: boolean;
+}
+
+export interface TypeSet {
+  heading: TypeStyle;
+  body: TypeStyle;
+  accent: TypeStyle;
+}
+
+export const TYPE_ROLES = ["heading", "body", "accent"] as const;
+export type TypeRole = (typeof TYPE_ROLES)[number];
+
+/** Khoảng cho phép của hệ số cỡ chữ. */
+export const SCALE_MIN = 0.7;
+export const SCALE_MAX = 1.6;
+
+export const WEIGHT_OPTIONS = [300, 400, 500, 600, 700, 800] as const;
+
 export interface ThemeColors {
   /** Nền sâu nhất của trang. */
   base: string;
@@ -74,6 +102,7 @@ export interface LandingContent {
   headline: string;
   subline: string;
   fonts: FontSet;
+  typography: TypeSet;
 }
 
 export interface CountdownContent {
@@ -85,6 +114,7 @@ export interface CountdownContent {
   unlockedNote: string;
   /** Font riêng: màn này luôn là tiếng Việt nên mặc định chọn font có dấu. */
   fonts: FontSet;
+  typography: TypeSet;
 }
 
 export type HubKey = "message" | "memories" | "flowers";
@@ -100,6 +130,7 @@ export interface HubContent {
   title: string;
   options: HubOption[];
   fonts: FontSet;
+  typography: TypeSet;
 }
 
 export interface MessageContent {
@@ -110,6 +141,7 @@ export interface MessageContent {
   body: string;
   signature: string;
   fonts: FontSet;
+  typography: TypeSet;
 }
 
 export interface MemoryBoard {
@@ -130,6 +162,7 @@ export interface MemoriesContent {
   filmstrip: ImageAsset[];
   boards: MemoryBoard[];
   fonts: FontSet;
+  typography: TypeSet;
 }
 
 export interface FlowersContent {
@@ -144,6 +177,7 @@ export interface FlowersContent {
     closing: string;
   };
   fonts: FontSet;
+  typography: TypeSet;
 }
 
 export interface MusicContent {

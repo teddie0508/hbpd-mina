@@ -19,7 +19,7 @@ const HREF: Record<HubKey, string> = {
 export function Hub({ content }: { content: HubContent }) {
   return (
     <main
-      style={fontVars(content.fonts)}
+      style={fontVars(content.fonts, content.typography)}
       className="vignette relative flex min-h-svh flex-col items-center justify-center overflow-hidden px-6 pt-20 pb-[max(5rem,env(safe-area-inset-bottom))]"
     >
       <Ambience />
@@ -33,7 +33,7 @@ export function Hub({ content }: { content: HubContent }) {
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          className="font-heading text-cream mb-12 text-center text-[clamp(2rem,7vw,3.4rem)] leading-tight sm:mb-16"
+          className="font-heading text-cream mb-12 text-center text-[calc(clamp(2rem,7vw,3.4rem)*var(--fz-heading,1))] leading-tight sm:mb-16"
         >
           {content.title}
         </motion.h1>
@@ -78,7 +78,7 @@ export function Hub({ content }: { content: HubContent }) {
                   )}
                 </motion.div>
 
-                <span className="font-body text-cream/90 group-hover:text-gold text-[clamp(1.05rem,3.4vw,1.35rem)] tracking-wide transition-colors">
+                <span className="font-body text-cream/90 group-hover:text-gold text-[calc(clamp(1.05rem,3.4vw,1.35rem)*var(--fz-body,1))] tracking-wide transition-colors">
                   {option.label}
                 </span>
               </Link>

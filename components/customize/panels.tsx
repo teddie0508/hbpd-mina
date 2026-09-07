@@ -26,7 +26,7 @@ import { ImageListField } from "./ImageListField";
 import {
   ColorInput,
   Field,
-  FontSetPicker,
+  TypographyPicker,
   SectionCard,
   Slider,
   TextArea,
@@ -122,9 +122,11 @@ export function GeneralPanel({
             onChange={(subtitle) => patchCountdown({ subtitle })}
           />
         </Field>
-        <FontSetPicker
-          value={content.countdown.fonts}
-          onChange={(fonts) => patchCountdown({ fonts })}
+        <TypographyPicker
+          fonts={content.countdown.fonts}
+          type={content.countdown.typography}
+          onFontsChange={(fonts) => patchCountdown({ fonts })}
+          onTypeChange={(typography) => patchCountdown({ typography })}
           sampleText={content.countdown.title || SAMPLE}
         />
       </SectionCard>
@@ -175,9 +177,11 @@ export function LandingPanel({
           onChange={(subline) => onChange({ subline })}
         />
       </Field>
-      <FontSetPicker
-        value={value.fonts}
-        onChange={(fonts) => onChange({ fonts })}
+      <TypographyPicker
+        fonts={value.fonts}
+        type={value.typography}
+        onFontsChange={(fonts) => onChange({ fonts })}
+        onTypeChange={(typography) => onChange({ typography })}
         sampleText={value.headline || SAMPLE}
       />
     </SectionCard>
@@ -242,9 +246,11 @@ export function HubPanel({
         ))}
       </div>
 
-      <FontSetPicker
-        value={value.fonts}
-        onChange={(fonts) => onChange({ fonts })}
+      <TypographyPicker
+        fonts={value.fonts}
+        type={value.typography}
+        onFontsChange={(fonts) => onChange({ fonts })}
+        onTypeChange={(typography) => onChange({ typography })}
         sampleText={value.title || SAMPLE}
       />
     </SectionCard>
@@ -293,9 +299,11 @@ export function MessagePanel({
             onChange={(signature) => onChange({ signature })}
           />
         </Field>
-        <FontSetPicker
-          value={value.fonts}
-          onChange={(fonts) => onChange({ fonts })}
+        <TypographyPicker
+          fonts={value.fonts}
+          type={value.typography}
+          onFontsChange={(fonts) => onChange({ fonts })}
+          onTypeChange={(typography) => onChange({ typography })}
           sampleText={value.heading || SAMPLE}
         />
       </SectionCard>
@@ -361,9 +369,11 @@ export function MemoriesPanel({
           items={value.filmstrip}
           onChange={(filmstrip) => onChange({ filmstrip })}
         />
-        <FontSetPicker
-          value={value.fonts}
-          onChange={(fonts) => onChange({ fonts })}
+        <TypographyPicker
+          fonts={value.fonts}
+          type={value.typography}
+          onFontsChange={(fonts) => onChange({ fonts })}
+          onTypeChange={(typography) => onChange({ typography })}
           sampleText={value.heading || SAMPLE}
         />
       </SectionCard>
@@ -484,9 +494,11 @@ export function FlowersPanel({
             onChange={(secretLabel) => onChange({ secretLabel })}
           />
         </Field>
-        <FontSetPicker
-          value={value.fonts}
-          onChange={(fonts) => onChange({ fonts })}
+        <TypographyPicker
+          fonts={value.fonts}
+          type={value.typography}
+          onFontsChange={(fonts) => onChange({ fonts })}
+          onTypeChange={(typography) => onChange({ typography })}
           sampleText={value.heading || SAMPLE}
         />
       </SectionCard>

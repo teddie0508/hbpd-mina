@@ -45,7 +45,7 @@ export function Landing({
 
   return (
     <main
-      style={fontVars(content.landing.fonts)}
+      style={fontVars(content.landing.fonts, content.landing.typography)}
       className="vignette relative flex min-h-svh flex-col items-center justify-center overflow-hidden px-6 pt-16 pb-[max(4rem,env(safe-area-inset-bottom))]"
     >
       <Ambience />
@@ -68,7 +68,7 @@ export function Landing({
               transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
               className="flex flex-col items-center gap-8 text-center"
             >
-              <h1 className="font-heading text-cream text-[clamp(2.2rem,9vw,4.5rem)] leading-[1.15] text-balance drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]">
+              <h1 className="font-heading text-cream text-[calc(clamp(2.2rem,9vw,4.5rem)*var(--fz-heading,1))] leading-[1.15] text-balance drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]">
                 {content.landing.headline}
               </h1>
 
@@ -85,7 +85,7 @@ export function Landing({
                   repeat: Infinity,
                   ease: "easeInOut",
                 }}
-                className="font-accent text-cream/85 text-[clamp(0.95rem,3.4vw,1.25rem)]"
+                className="font-accent text-cream/85 text-[calc(clamp(0.95rem,3.4vw,1.25rem)*var(--fz-accent,1))]"
               >
                 {content.landing.subline}
               </motion.p>

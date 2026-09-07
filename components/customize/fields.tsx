@@ -2,7 +2,15 @@
 
 import type { ReactNode } from "react";
 
-import type { FontSet } from "@/lib/content/schema";
+import {
+  SCALE_MAX,
+  SCALE_MIN,
+  TYPE_ROLES,
+  WEIGHT_OPTIONS,
+  type FontSet,
+  type TypeRole,
+  type TypeSet,
+} from "@/lib/content/schema";
 import { cx } from "@/lib/cx";
 import { FONTS, FONT_CATEGORY_LABEL, fontStack, getFont } from "@/lib/fonts";
 
@@ -158,37 +166,58 @@ export function Toggle({
   );
 }
 
-const ROLE_LABEL: Record<keyof FontSet, string> = {
+const ROLE_LABEL: Record<TypeRole, string> = {
   heading: "Tiêu đề",
   body: "Đoạn văn",
   accent: "Chữ ký / ghi chú",
 };
 
+const WEIGHT_LABEL: Record<number, string> = {
+  300: "300 — mảnh",
+  400: "400 — thường",
+  500: "500 — hơi đậm",
+  600: "600 — đậm vừa",
+  700: "700 — đậm",
+  800: "800 — rất đậm",
+};
+
 /**
- * Chọn font cho một khối. Font không có bảng dấu tiếng Việt vẫn được giữ lại
- * (nhiều font script đẹp nhất chỉ có Latin, hợp cho tiêu đề tiếng Anh) nhưng
- * được đánh dấu rõ, vì dùng nhầm cho chữ tiếng Việt là vỡ hết dấu.
+ * Chỉnh cách trình bày chữ của một khối: mặt chữ, cỡ, độ đậm và nghiêng,
+ * riêng cho từng vai trò (tiêu đề / đoạn văn / chữ ký).
+ *
+ * Font không có bảng dấu tiếng Việt vẫn được giữ lại — nhiều font script đẹp
+ * nhất chỉ có Latin, hợp cho tiêu đề tiếng Anh — nhưng được đánh dấu rõ, vì
+ * dùng nhầm cho chữ tiếng Việt là vỡ hết dấu.
  */
-export function FontSetPicker({
-  value,
-  onChange,
+export function TypographyPicker({
+  fonts,
+  type,
+  onFontsChange,
+  onTypeChange,
   sampleText,
 }: {
-  value: FontSet;
-  onChange: (value: FontSet) => void;
+  fonts: FontSet;
+  type: TypeSet;
+  onFontsChange: (value: FontSet) => void;
+  onTypeChange: (value: TypeSet) => void;
   /** Câu mẫu để xem thử — nên có dấu tiếng Việt. */
   sampleText: string;
 }) {
   const categories = [...new Set(FONTS.map((f) => f.category))];
 
+  const patchRole = (role: TypeRole, patch: Partial<TypeSet[TypeRole]>) =>
+    onTypeChange({ ...type, [role]: { ...type[role], ...patch } });
+
   return (
-    <div className="space-y-4">
-      {(Object.keys(ROLE_LABEL) as Array<keyof FontSet>).map((role) => {
-        const font = getFont(value[role]);
+    <div className="space-y-5">
+      {TYPE_ROLES.map((role) => {
+        const font = getFont(fonts[role]);
+        const style = type[role];
+
         return (
-          <div key={role}>
-            <div className="mb-1.5 flex items-center justify-between gap-2">
-              <span className="text-mist/80 text-xs tracking-wide">
+          <div key={role} className="border-mist/10 rounded-lg border p-3">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <span className="text-cream/85 text-xs font-medium tracking-wide">
                 {ROLE_LABEL[role]}
               </span>
               {!font.vietnamese ? (
@@ -199,8 +228,10 @@ export function FontSetPicker({
             </div>
 
             <select
-              value={value[role]}
-              onChange={(e) => onChange({ ...value, [role]: e.target.value })}
+              value={fonts[role]}
+              onChange={(e) =>
+                onFontsChange({ ...fonts, [role]: e.target.value })
+              }
               className={INPUT}
             >
               {categories.map((category) => (
@@ -215,11 +246,67 @@ export function FontSetPicker({
               ))}
             </select>
 
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <label className="block">
+                <span className="text-mist/70 mb-1 block text-[11px]">
+                  Cỡ chữ
+                </span>
+                <Slider
+                  value={style.scale}
+                  min={SCALE_MIN}
+                  max={SCALE_MAX}
+                  step={0.05}
+                  onChange={(scale) => patchRole(role, { scale })}
+                  format={(v) => `${Math.round(v * 100)}%`}
+                />
+              </label>
+
+              <label className="block">
+                <span className="text-mist/70 mb-1 block text-[11px]">
+                  Độ đậm
+                </span>
+                <select
+                  value={style.weight}
+                  onChange={(e) =>
+                    patchRole(role, { weight: Number(e.target.value) })
+                  }
+                  className={INPUT}
+                >
+                  {WEIGHT_OPTIONS.map((w) => (
+                    <option key={w} value={w}>
+                      {WEIGHT_LABEL[w] ?? w}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <label className="mt-3 flex cursor-pointer items-center gap-2.5">
+              <input
+                type="checkbox"
+                checked={style.italic}
+                onChange={(e) => patchRole(role, { italic: e.target.checked })}
+                className="accent-gold size-4 cursor-pointer"
+              />
+              <span className="text-cream/85 text-sm">Chữ nghiêng</span>
+            </label>
+
+            {/* Xem thử đúng mặt chữ, cỡ, độ đậm và độ nghiêng đang chọn. */}
             <p
-              className="text-cream/85 border-mist/10 bg-base/40 mt-2 truncate rounded-lg border px-3 py-2 text-lg"
-              style={{ fontFamily: fontStack(value[role]) }}
+              className="text-cream/85 border-mist/10 bg-base/40 mt-3 truncate rounded-lg border px-3 py-2"
+              style={{
+                fontFamily: fontStack(fonts[role]),
+                fontSize: `${style.scale * 1.15}rem`,
+                fontWeight: style.weight,
+                fontStyle: style.italic ? "italic" : "normal",
+              }}
             >
               {sampleText}
+            </p>
+
+            <p className="text-mist/45 mt-1.5 text-[11px] leading-relaxed">
+              Font chỉ có sẵn một nét thì trình duyệt sẽ tự làm đậm hoặc nghiêng
+              giả — nhìn thô hơn font có nét thật.
             </p>
           </div>
         );

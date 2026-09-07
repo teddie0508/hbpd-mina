@@ -64,14 +64,14 @@ export function Countdown({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-      style={fontVars(content.fonts)}
+      style={fontVars(content.fonts, content.typography)}
       className="flex flex-col items-center gap-8 text-center"
     >
       <div className="space-y-3">
-        <h1 className="font-heading text-cream text-[clamp(2rem,7vw,3.5rem)] leading-tight">
+        <h1 className="font-heading text-cream text-[calc(clamp(2rem,7vw,3.5rem)*var(--fz-heading,1))] leading-tight">
           {content.title}
         </h1>
-        <p className="font-body text-mist/80 measure mx-auto text-[clamp(0.9rem,2.6vw,1.05rem)]">
+        <p className="font-body text-mist/80 measure mx-auto text-[calc(clamp(0.9rem,2.6vw,1.05rem)*var(--fz-body,1))]">
           {content.subtitle}
         </p>
       </div>
@@ -85,18 +85,18 @@ export function Countdown({
         {units.map((unit, i) => (
           <div key={unit.label} className="flex items-start gap-2 sm:gap-4">
             {i > 0 ? (
-              <span className="text-gold/35 pt-1 text-[clamp(1.6rem,5vw,2.4rem)] leading-none">
+              <span className="font-body text-gold/35 pt-1 text-[calc(clamp(1.6rem,5vw,2.4rem)*var(--fz-body,1))] leading-none">
                 :
               </span>
             ) : null}
             <div className="flex flex-col items-center gap-1">
               <span
-                className="border-gold/20 bg-deep/50 text-gold grid min-w-[2.6em] place-items-center rounded-xl border px-2 py-2 text-[clamp(1.6rem,6vw,2.8rem)] leading-none font-light tabular-nums"
+                className="font-body border-gold/20 bg-deep/50 text-gold grid min-w-[2.6em] place-items-center rounded-xl border px-2 py-2 text-[calc(clamp(1.6rem,6vw,2.8rem)*var(--fz-body,1))] leading-none tabular-nums"
                 style={{ fontVariantNumeric: "tabular-nums" }}
               >
                 {left === null ? "--" : String(unit.value).padStart(2, "0")}
               </span>
-              <span className="font-body text-mist/60 text-[0.65rem] tracking-[0.18em] uppercase">
+              <span className="font-body text-mist/60 text-[calc(0.65rem*var(--fz-body,1))] tracking-[0.18em] uppercase">
                 {unit.label}
               </span>
             </div>
@@ -111,12 +111,31 @@ export function Countdown({
         transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
         className="relative mt-2 h-16 w-24 opacity-40"
       >
-        <span className="border-mist/40 absolute inset-0 rounded-md border-2" />
-        <span
-          className="border-mist/40 absolute inset-x-0 top-0 h-1/2 border-x-2 border-t-2"
-          style={{ clipPath: "polygon(0 0, 100% 0, 50% 100%)" }}
-        />
-        <span className="bg-gold/50 absolute top-1/2 left-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full" />
+        <svg viewBox="0 0 96 64" fill="none" className="size-full">
+          <rect
+            x="2"
+            y="2"
+            width="92"
+            height="60"
+            rx="6"
+            stroke="color-mix(in srgb, var(--c-mist) 40%, transparent)"
+            strokeWidth="2"
+          />
+          {/* Nắp thư: một đường gấp khúc, không phải hình bị cắt. */}
+          <path
+            d="M2 8 L48 40 L94 8"
+            stroke="color-mix(in srgb, var(--c-mist) 40%, transparent)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <circle
+            cx="48"
+            cy="36"
+            r="6"
+            fill="color-mix(in srgb, var(--c-gold) 50%, transparent)"
+          />
+        </svg>
       </motion.div>
     </motion.div>
   );

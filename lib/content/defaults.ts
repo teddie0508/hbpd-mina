@@ -4,8 +4,19 @@ import {
   SLOT_ASPECT,
   type ImageAsset,
   type SiteContent,
+  type TypeSet,
   type ThemeColors,
 } from "./schema";
+
+/**
+ * Cách trình bày mặc định: đúng như thiết kế gốc.
+ * Mỗi khối giữ một bản sao riêng để chỉnh khối này không kéo theo khối kia.
+ */
+const baseType = (): TypeSet => ({
+  heading: { scale: 1, weight: 400, italic: false },
+  body: { scale: 1, weight: 400, italic: false },
+  accent: { scale: 1, weight: 400, italic: false },
+});
 
 /** Ảnh giữ chỗ đúng tỉ lệ của một vị trí, dùng cho tới khi bạn tải ảnh thật lên. */
 const ph = (
@@ -43,12 +54,14 @@ export const DEFAULT_CONTENT: SiteContent = {
     subtitle: "Có một thứ đang đợi em. Quay lại đúng ngày nhé.",
     unlockedNote: "Đến giờ rồi.",
     fonts: { heading: "cormorant", body: "be-vietnam", accent: "mali" },
+    typography: baseType(),
   },
 
   landing: {
     headline: "Happy Birthday, Mina",
     subline: "chạm vào phong bì nhé...",
     fonts: { heading: "great-vibes", body: "be-vietnam", accent: "mali" },
+    typography: baseType(),
   },
 
   hub: {
@@ -60,6 +73,7 @@ export const DEFAULT_CONTENT: SiteContent = {
       // icon: null -> hiện ô chờ, bạn tải icon riêng lên ở /customize
     ],
     fonts: { heading: "pacifico", body: "be-vietnam", accent: "cormorant" },
+    typography: baseType(),
   },
 
   message: {
@@ -75,6 +89,7 @@ export const DEFAULT_CONTENT: SiteContent = {
     ].join("\n\n"),
     signature: "— của em",
     fonts: { heading: "dancing", body: "mali", accent: "cormorant" },
+    typography: baseType(),
   },
 
   memories: {
@@ -106,6 +121,7 @@ export const DEFAULT_CONTENT: SiteContent = {
       },
     ],
     fonts: { heading: "pacifico", body: "cormorant", accent: "mali" },
+    typography: baseType(),
   },
 
   flowers: {
@@ -123,6 +139,7 @@ export const DEFAULT_CONTENT: SiteContent = {
       closing: "Chúc mừng sinh nhật, Mina.",
     },
     fonts: { heading: "dancing", body: "mali", accent: "cormorant" },
+    typography: baseType(),
   },
 
   music: {

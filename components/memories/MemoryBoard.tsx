@@ -39,7 +39,7 @@ export function MemoryBoard({ board }: { board: Board }) {
       className="relative"
     >
       {board.title ? (
-        <h3 className="font-accent text-cream/75 mb-3 text-center text-[clamp(0.95rem,3vw,1.2rem)] tracking-wide">
+        <h3 className="font-accent text-cream/75 mb-3 text-center text-[calc(clamp(0.95rem,3vw,1.2rem)*var(--fz-accent,1))] tracking-wide">
           {board.title}
         </h3>
       ) : null}

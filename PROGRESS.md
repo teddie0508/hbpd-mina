@@ -45,7 +45,7 @@ lib/
   {fonts,theme,auth,placeholder,bouquet,crop,text,cx}.ts
 ```
 
-## Sáu cái bẫy đã gặp, đừng dẫm lại
+## Bảy cái bẫy đã gặp, đừng dẫm lại
 
 1. **Không khai `--font-*` trong `@theme`.** Biến trong `@theme` nằm ở `:root` nên `var()` bị thay thế **ngay tại `:root`**; khối con đặt lại `--f-heading` sẽ vô tác dụng. Font phải khai bằng `@utility font-heading { font-family: var(--f-heading) }`.
 
@@ -58,6 +58,8 @@ lib/
 5. **`Math.sin/cos` lệch chữ số cuối giữa Node và trình duyệt** → cảnh báo hydration. Mọi số sinh ra từ lượng giác phải qua `round3()` trước khi vào DOM.
 
 6. **Đừng đặt `force-dynamic` cho các trang chỉ đọc nội dung.** Mỗi lần chuyển trang máy chủ lại gọi Vercel Blob hai lượt trước khi trả HTML, và route động thì `<Link prefetch>` không nạp trước được — chuyển cảnh khựng hẳn khi mạng yếu. Cách đúng: bọc phần đọc trong `unstable_cache` gắn nhãn, `revalidateTag` khi lưu, và để trang dựng tĩnh. Riêng `/` vẫn phải động vì đọc cookie và giờ hiện tại. Lưu ý Next 16 đổi chữ ký thành `revalidateTag(tag, { expire: 0 })`.
+
+7. **Chỉ cache dữ liệu thô, đừng cache kết quả đã trộn với defaults.** `unstable_cache` từng bọc cả `mergeIntoDefaults`, nên khi thêm field mới vào schema, bản nằm sẵn trong cache vẫn tính theo defaults cũ — vừa deploy xong là trang văng lỗi "Cannot read properties of undefined", mãi tới khi có ai bấm Lưu mới hết. Nay cache đúng phần đọc đĩa, còn trộn lại mỗi lần đọc.
 
 Ngoài ra: `placehold.co` mặc định trả SVG mà bộ tối ưu ảnh của Next chặn SVG — URL ảnh giữ chỗ phải có đuôi `.png`.
 

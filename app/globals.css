@@ -45,12 +45,18 @@
 
 @utility font-heading {
   font-family: var(--f-heading);
+  font-weight: var(--fw-heading, 400);
+  font-style: var(--fi-heading, normal);
 }
 @utility font-body {
   font-family: var(--f-body);
+  font-weight: var(--fw-body, 400);
+  font-style: var(--fi-body, normal);
 }
 @utility font-accent {
   font-family: var(--f-accent);
+  font-weight: var(--fw-accent, 400);
+  font-style: var(--fi-accent, normal);
 }
 
 :root {
@@ -67,6 +73,11 @@
   --f-heading: Georgia, serif;
   --f-body: system-ui, sans-serif;
   --f-accent: cursive;
+
+  /* Hệ số cỡ chữ; mỗi chỗ đặt chữ nhân clamp() của nó với biến tương ứng. */
+  --fz-heading: 1;
+  --fz-body: 1;
+  --fz-accent: 1;
 
   color-scheme: dark;
 }

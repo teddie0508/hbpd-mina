@@ -17,7 +17,7 @@ export function MessageScene({ content }: { content: MessageContent }) {
 
   return (
     <main
-      style={fontVars(content.fonts)}
+      style={fontVars(content.fonts, content.typography)}
       className="vignette relative min-h-svh overflow-x-hidden px-5 pt-20 pb-[max(4rem,env(safe-area-inset-bottom))] sm:px-8"
     >
       <Ambience />
@@ -30,7 +30,7 @@ export function MessageScene({ content }: { content: MessageContent }) {
         </section>
 
         <Reveal delay={0.15} className="mt-14 text-center sm:mt-20">
-          <h1 className="font-heading text-cream text-[clamp(1.9rem,6.5vw,3.2rem)] leading-[1.25] text-balance">
+          <h1 className="font-heading text-cream text-[calc(clamp(1.9rem,6.5vw,3.2rem)*var(--fz-heading,1))] leading-[1.25] text-balance">
             {content.heading}
           </h1>
         </Reveal>
@@ -40,7 +40,7 @@ export function MessageScene({ content }: { content: MessageContent }) {
         <div className="measure mx-auto mt-10 space-y-7 sm:mt-12">
           {paragraphs.map((paragraph, i) => (
             <Reveal key={i} delay={i * 0.06} amount={0.15}>
-              <p className="font-body text-cream/85 text-center text-[clamp(1rem,3.4vw,1.15rem)] leading-[1.85] text-pretty">
+              <p className="font-body text-cream/85 text-center text-[calc(clamp(1rem,3.4vw,1.15rem)*var(--fz-body,1))] leading-[1.85] text-pretty">
                 {paragraph}
               </p>
             </Reveal>
@@ -49,7 +49,7 @@ export function MessageScene({ content }: { content: MessageContent }) {
 
         {content.signature ? (
           <Reveal delay={0.1} className="mt-12 text-center">
-            <p className="font-accent text-gold/90 text-[clamp(1.1rem,4vw,1.6rem)]">
+            <p className="font-accent text-gold/90 text-[calc(clamp(1.1rem,4vw,1.6rem)*var(--fz-accent,1))]">
               {content.signature}
             </p>
           </Reveal>
