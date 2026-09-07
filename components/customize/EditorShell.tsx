@@ -9,6 +9,7 @@ import { saveSiteContent } from "@/app/customize/(editor)/actions";
 import type { SiteContent } from "@/lib/content/schema";
 import { cx } from "@/lib/cx";
 
+import { StorageProvider } from "./upload";
 import {
   FlowersPanel,
   GeneralPanel,
@@ -196,47 +197,49 @@ export function EditorShell({
         </nav>
       </header>
 
-      <main className="mt-5">
-        {tab === "general" ? (
-          <GeneralPanel content={draft} onChange={patch} />
-        ) : null}
-        {tab === "landing" ? (
-          <LandingPanel
-            value={draft.landing}
-            onChange={(p) => patch({ landing: { ...draft.landing, ...p } })}
-          />
-        ) : null}
-        {tab === "hub" ? (
-          <HubPanel
-            value={draft.hub}
-            onChange={(p) => patch({ hub: { ...draft.hub, ...p } })}
-          />
-        ) : null}
-        {tab === "message" ? (
-          <MessagePanel
-            value={draft.message}
-            onChange={(p) => patch({ message: { ...draft.message, ...p } })}
-          />
-        ) : null}
-        {tab === "memories" ? (
-          <MemoriesPanel
-            value={draft.memories}
-            onChange={(p) => patch({ memories: { ...draft.memories, ...p } })}
-          />
-        ) : null}
-        {tab === "flowers" ? (
-          <FlowersPanel
-            value={draft.flowers}
-            onChange={(p) => patch({ flowers: { ...draft.flowers, ...p } })}
-          />
-        ) : null}
-        {tab === "music" ? (
-          <MusicPanel
-            value={draft.music}
-            onChange={(p) => patch({ music: { ...draft.music, ...p } })}
-          />
-        ) : null}
-      </main>
+      <StorageProvider mode={storage}>
+        <main className="mt-5">
+          {tab === "general" ? (
+            <GeneralPanel content={draft} onChange={patch} />
+          ) : null}
+          {tab === "landing" ? (
+            <LandingPanel
+              value={draft.landing}
+              onChange={(p) => patch({ landing: { ...draft.landing, ...p } })}
+            />
+          ) : null}
+          {tab === "hub" ? (
+            <HubPanel
+              value={draft.hub}
+              onChange={(p) => patch({ hub: { ...draft.hub, ...p } })}
+            />
+          ) : null}
+          {tab === "message" ? (
+            <MessagePanel
+              value={draft.message}
+              onChange={(p) => patch({ message: { ...draft.message, ...p } })}
+            />
+          ) : null}
+          {tab === "memories" ? (
+            <MemoriesPanel
+              value={draft.memories}
+              onChange={(p) => patch({ memories: { ...draft.memories, ...p } })}
+            />
+          ) : null}
+          {tab === "flowers" ? (
+            <FlowersPanel
+              value={draft.flowers}
+              onChange={(p) => patch({ flowers: { ...draft.flowers, ...p } })}
+            />
+          ) : null}
+          {tab === "music" ? (
+            <MusicPanel
+              value={draft.music}
+              onChange={(p) => patch({ music: { ...draft.music, ...p } })}
+            />
+          ) : null}
+        </main>
+      </StorageProvider>
 
       <SaveToast state={save} onDismiss={() => setSave({ kind: "idle" })} />
     </div>

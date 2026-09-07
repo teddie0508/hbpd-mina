@@ -6,18 +6,12 @@ import { cache } from "react";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 
+import { BLOB_PREFIX } from "../blob-paths";
 import { cloneDefaults } from "./defaults";
 import { CONTENT_VERSION, type SiteContent } from "./schema";
 
 /** Nhãn để xoá cache nội dung mỗi khi bấm Lưu ở /customize. */
 export const CONTENT_TAG = "site-content";
-
-/**
- * Tiền tố riêng của dự án trong Blob store.
- * Một store dùng chung được cho nhiều dự án, nên phải tách namespace —
- * không thì dự án khác ghi trùng đường dẫn là đè mất nội dung của nhau.
- */
-export const BLOB_PREFIX = "mina/";
 
 const BLOB_PATH = `${BLOB_PREFIX}content/site.json`;
 const LOCAL_PATH = path.join(process.cwd(), ".data", "content.json");

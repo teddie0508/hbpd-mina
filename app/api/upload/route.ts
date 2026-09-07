@@ -1,39 +1,25 @@
-import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 
 import { isEditor } from "@/lib/auth";
-import { BLOB_PREFIX, storageMode } from "@/lib/content/store";
+import {
+  AUDIO_TYPES,
+  EXTENSION,
+  IMAGE_TYPES,
+  MAX_AUDIO_BYTES,
+  MAX_IMAGE_BYTES,
+} from "@/lib/blob-paths";
 
 export const dynamic = "force-dynamic";
 
-/** Ảnh đã được cắt ở trình duyệt trước khi gửi lên, nên 8MB là thừa sức. */
-const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
-/** Một bài nhạc mp3 chất lượng khá tầm 8-12MB. */
-const MAX_AUDIO_BYTES = 20 * 1024 * 1024;
-
-const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const AUDIO_TYPES = new Set([
-  "audio/mpeg",
-  "audio/mp4",
-  "audio/aac",
-  "audio/ogg",
-  "audio/wav",
-  "audio/x-m4a",
-]);
-
-const EXTENSION: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-  "audio/mpeg": "mp3",
-  "audio/mp4": "m4a",
-  "audio/x-m4a": "m4a",
-  "audio/aac": "aac",
-  "audio/ogg": "ogg",
-  "audio/wav": "wav",
-};
+/**
+ * Đường tải lên dùng khi chạy ở MÁY, nơi chưa có kho Blob.
+ *
+ * Bản deploy KHÔNG đi qua đây: Vercel chặn mọi request có body quá 4,5MB
+ * trước khi function kịp chạy, mà một file mp3 bình thường đã vượt ngưỡng.
+ * Ở đó trình duyệt tải thẳng lên Blob, xem app/api/upload-token/route.ts.
+ */
 
 export async function POST(request: Request) {
   if (!(await isEditor())) {
@@ -55,8 +41,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Thiếu tệp" }, { status: 400 });
   }
 
-  const isImage = IMAGE_TYPES.has(file.type);
-  const isAudio = AUDIO_TYPES.has(file.type);
+  const isImage = IMAGE_TYPES.includes(file.type);
+  const isAudio = AUDIO_TYPES.includes(file.type);
   if (!isImage && !isAudio) {
     return NextResponse.json(
       { error: `Không nhận định dạng ${file.type || "không rõ"}` },
@@ -78,16 +64,7 @@ export async function POST(request: Request) {
   const name = `${crypto.randomUUID()}.${ext}`;
 
   try {
-    if (storageMode() === "blob") {
-      const blob = await put(`${BLOB_PREFIX}uploads/${kind}/${name}`, file, {
-        access: "public",
-        contentType: file.type,
-        addRandomSuffix: false,
-      });
-      return NextResponse.json({ url: blob.url });
-    }
-
-    // Chạy ở máy: ghi vào public/uploads để xem thử ngay, không cần token Blob.
+    // Ghi vào public/uploads để xem thử ngay, không cần token Blob.
     const dir = path.join(process.cwd(), "public", "uploads", kind);
     await fs.mkdir(dir, { recursive: true });
     await fs.writeFile(

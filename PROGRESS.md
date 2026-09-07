@@ -45,7 +45,7 @@ lib/
   {fonts,theme,auth,placeholder,bouquet,crop,text,cx}.ts
 ```
 
-## Chín cái bẫy đã gặp, đừng dẫm lại
+## Mười cái bẫy đã gặp, đừng dẫm lại
 
 1. **Không khai `--font-*` trong `@theme`.** Biến trong `@theme` nằm ở `:root` nên `var()` bị thay thế **ngay tại `:root`**; khối con đặt lại `--f-heading` sẽ vô tác dụng. Font phải khai bằng `@utility font-heading { font-family: var(--f-heading) }`.
 
@@ -64,6 +64,8 @@ lib/
 8. **`revalidateTag` KHÔNG bảo đảm ghi xong đọc lại là thấy.** Nó chỉ đánh dấu hết hạn, nên lưu xong tải lại trang vẫn ra bản cũ một lúc — báo thành công mà tưởng như không có gì đổi. Muốn đọc-thấy-ngay phải dùng `updateTag`, mà hàm đó **chỉ chạy được trong Server Action**. Vì vậy đường lưu là Server Action (`app/customize/(editor)/actions.ts`) chứ không phải Route Handler. Trình sửa còn đọc qua `getContentFresh()` bỏ qua cache, vì đó là nơi bạn nhìn vào để kiểm chứng.
 
 9. **JPEG không có kênh alpha.** Khâu cắt ảnh từng xuất JPEG nên icon đã xoá nền hiện ra với nền đen đặc. Nay xuất WebP (trình duyệt không hỗ trợ thì tự lùi về PNG — cũng có alpha).
+
+10. **Vercel chặn request có body quá 4,5MB trước khi function kịp chạy** (`FUNCTION_PAYLOAD_TOO_LARGE`). Một file mp3 bình thường đã vượt ngưỡng, và giới hạn này là cứng, không chỉnh bằng cấu hình. Tệp phải đi **thẳng từ trình duyệt lên Blob** bằng `upload()` của `@vercel/blob/client`; function chỉ ký một token ngắn hạn (`app/api/upload-token/route.ts`). Nhớ chặn `pathname` trong `onBeforeGenerateToken`, vì token cho phép ghi vào đúng đường dẫn client yêu cầu — thiếu bước đó thì một pathname bịa ra ghi đè được lên chính file nội dung của trang. Đường `/api/upload` cũ chỉ còn dùng khi chạy ở máy.
 
 Ngoài ra: `placehold.co` mặc định trả SVG mà bộ tối ưu ảnh của Next chặn SVG — URL ảnh giữ chỗ phải có đuôi `.png`.
 

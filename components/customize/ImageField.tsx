@@ -12,29 +12,7 @@ import { cx } from "@/lib/cx";
 import { isPlaceholder } from "@/lib/placeholder";
 
 import { CropDialog } from "./CropDialog";
-
-/** Đuôi tệp phải khớp kiểu thật, vì máy chủ dựa vào đó để đặt tên khi lưu. */
-const EXTENSION: Record<string, string> = {
-  "image/webp": "webp",
-  "image/png": "png",
-  "image/jpeg": "jpg",
-};
-
-async function uploadBlob(blob: Blob): Promise<string> {
-  const form = new FormData();
-  const ext = EXTENSION[blob.type] ?? "bin";
-  form.append("file", new File([blob], `photo.${ext}`, { type: blob.type }));
-
-  const res = await fetch("/api/upload", { method: "POST", body: form });
-  if (!res.ok) {
-    const data = (await res.json().catch(() => null)) as {
-      error?: string;
-    } | null;
-    throw new Error(data?.error ?? "Không tải lên được");
-  }
-  const data = (await res.json()) as { url: string };
-  return data.url;
-}
+import { useUploadFile } from "./upload";
 
 /**
  * Một ô ảnh: chọn tệp -> cắt đúng tỉ lệ -> tải lên -> trả về ImageAsset.
@@ -59,13 +37,14 @@ export function ImageField({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const altId = useId();
+  const uploadFile = useUploadFile();
 
   async function handleCropped(blob: Blob) {
     setPending(null);
     setBusy(true);
     setError(null);
     try {
-      const url = await uploadBlob(blob);
+      const url = await uploadFile(blob, "images");
       onChange({
         id: value?.id ?? crypto.randomUUID(),
         url,

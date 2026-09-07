@@ -2,6 +2,8 @@
 
 import { useRef, useState } from "react";
 
+import { useUploadFile } from "./upload";
+
 /** Chọn và tải lên một file nhạc. Không cắt xén gì, gửi thẳng lên kho. */
 export function AudioField({
   url,
@@ -13,22 +15,13 @@ export function AudioField({
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const uploadFile = useUploadFile();
 
   async function upload(file: File) {
     setBusy(true);
     setError(null);
     try {
-      const form = new FormData();
-      form.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: form });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => null)) as {
-          error?: string;
-        } | null;
-        throw new Error(data?.error ?? "Không tải lên được");
-      }
-      const data = (await res.json()) as { url: string };
-      onChange(data.url);
+      onChange(await uploadFile(file, "audio"));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không tải lên được");
     } finally {
