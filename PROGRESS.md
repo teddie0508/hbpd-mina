@@ -45,7 +45,7 @@ lib/
   {fonts,theme,auth,placeholder,bouquet,crop,text,cx}.ts
 ```
 
-## Mười hai cái bẫy đã gặp, đừng dẫm lại
+## Mười ba cái bẫy đã gặp, đừng dẫm lại
 
 1. **Không khai `--font-*` trong `@theme`.** Biến trong `@theme` nằm ở `:root` nên `var()` bị thay thế **ngay tại `:root`**; khối con đặt lại `--f-heading` sẽ vô tác dụng. Font phải khai bằng `@utility font-heading { font-family: var(--f-heading) }`.
 
@@ -72,6 +72,8 @@ lib/
 11b. **Chốt khoá cũ (giữ để đối chiếu).** Ban đầu chỉ `/` kiểm ngày mở, nên gõ thẳng `/hub` là xem được hết dù đồng hồ còn đang đếm ngược — đếm ngược thành vô nghĩa. Nay dùng chung `lib/gate.ts` ở cả năm trang. Hệ quả: bốn trang trong không còn dựng tĩnh được nữa (phải đọc cookie và giờ hiện tại). Đổi lại bỏ được `?preview=1`: cứ đăng nhập là xem trước được hết.
 
 12. **Đừng để cờ "chưa lưu" phụ thuộc vào lần đọc lại từ máy chủ.** Cờ này từng so bản nháp với bản đọc lại; lần đọc đó trễ một nhịp là nút vẫn báo "Lưu thay đổi" và phải bấm lần hai. Nay so với chính bản mà lệnh ghi trả về.
+
+13. **Đã GỠ HẲN lớp cache nội dung giữa các request — đừng thêm lại.** `unstable_cache` gắn nhãn từng được thêm để đỡ một lượt gọi Blob, và nó đẻ ra bốn lỗi liên tiếp: lưu xong trang vẫn hiện nội dung cũ; thêm field mới vào schema là trang văng lỗi ngay sau deploy; phải bấm Lưu hai lần; icon đổi rồi mà trang vẫn vẽ bản cũ hơn một lần lưu. Trang chỉ có một người xem, vài chục mili giây không đáng đánh đổi lấy chuyện hiển thị sai. Nay đọc thẳng Blob mỗi request, kèm `?v=${Date.now()}` để CDN của Blob không có gì để trả về bản cũ (từng dùng `uploadedAt` từ `list()`, nhưng ngay sau khi ghi thì `list()` có lúc còn trả mốc cũ). `cache()` của React vẫn gộp trong cùng một request.
 
 Ngoài ra: `placehold.co` mặc định trả SVG mà bộ tối ưu ảnh của Next chặn SVG — URL ảnh giữ chỗ phải có đuôi `.png`.
 

@@ -1,7 +1,6 @@
 import "server-only";
 
 import { list, put } from "@vercel/blob";
-import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -9,9 +8,6 @@ import path from "node:path";
 import { BLOB_PREFIX } from "../blob-paths";
 import { cloneDefaults } from "./defaults";
 import { CONTENT_VERSION, type SiteContent } from "./schema";
-
-/** Nhãn để xoá cache nội dung mỗi khi bấm Lưu ở /customize. */
-export const CONTENT_TAG = "site-content";
 
 const BLOB_PATH = `${BLOB_PREFIX}content/site.json`;
 const LOCAL_PATH = path.join(process.cwd(), ".data", "content.json");
@@ -74,10 +70,15 @@ async function readRaw(): Promise<unknown | null> {
 
     // Vì ghi đè cùng một đường dẫn nên URL không bao giờ đổi, mà Blob phục vụ
     // file qua CDN. `cache: "no-store"` chỉ chặn cache phía Next, không xoá
-    // được bản cũ đang nằm ở CDN edge — nên vừa lưu xong đọc lại vẫn ra nội
-    // dung cũ. Gắn thêm dấu thời gian tải lên để mỗi lần lưu là một URL khác.
-    const stamp = new Date(found.uploadedAt).getTime();
-    const res = await fetch(`${found.url}?v=${stamp}`, { cache: "no-store" });
+    // được bản cũ đang nằm ở CDN edge.
+    //
+    // Từng gắn uploadedAt lấy từ list() làm dấu, nhưng ngay sau khi ghi thì
+    // list() có lúc còn trả về mốc cũ, thế là đọc trúng bản cũ ở CDN. Dùng
+    // thời điểm đọc thì mỗi lần đọc là một URL chưa từng có, CDN không có gì
+    // để trả về bản cũ nữa.
+    const res = await fetch(`${found.url}?v=${Date.now()}`, {
+      cache: "no-store",
+    });
     if (!res.ok) return null;
     return (await res.json()) as unknown;
   }
@@ -96,45 +97,26 @@ async function readRaw(): Promise<unknown | null> {
  * `prefetch` không nạp trước được — chuyển cảnh sẽ khựng khi mạng yếu.
  */
 /**
- * CHỈ cache phần đọc dữ liệu thô, không cache kết quả đã trộn với defaults.
+ * Nội dung hiện tại.
  *
- * Trộn xong rồi mới cache là một cái bẫy: thêm field mới vào schema thì bản
- * nằm sẵn trong cache vẫn là bản tính theo defaults cũ, nên vừa deploy xong
- * trang sẽ nhận object thiếu field và văng lỗi, mãi tới khi có ai bấm Lưu.
- * Trộn lại mỗi lần đọc thì field mới luôn có mặt ngay, mà vẫn không tốn thêm
- * lượt gọi mạng nào.
- */
-const readRawCached = unstable_cache(
-  async (): Promise<unknown | null> => readRaw(),
-  ["site-content", String(CONTENT_VERSION)],
-  { tags: [CONTENT_TAG] },
-);
-
-/**
- * Nội dung hiện tại. `cache()` gộp thêm mọi lần gọi trong cùng một request
- * thành một lần duy nhất.
+ * Cố tình KHÔNG có lớp cache nào giữa các request. Từng bọc phần đọc trong
+ * `unstable_cache` gắn nhãn để đỡ một lượt gọi Blob, nhưng lớp đó đẻ ra một
+ * chuỗi lỗi khó chịu: lưu xong trang vẫn hiện nội dung cũ, thêm field mới vào
+ * schema là trang văng lỗi ngay sau khi deploy, và gần nhất là icon đổi rồi mà
+ * trang vẫn vẽ bản cũ hơn một lần lưu.
+ *
+ * Trang này chỉ có một người xem, khoản tiết kiệm vài chục mili giây không
+ * đáng đánh đổi lấy chuyện nội dung hiển thị sai. `cache()` của React vẫn gộp
+ * mọi lần gọi trong cùng một request thành một lượt đọc duy nhất.
  */
 export const getContent = cache(async (): Promise<SiteContent> => {
-  try {
-    return mergeIntoDefaults(await readRawCached());
-  } catch (err) {
-    console.error("[content] không đọc được bản lưu, dùng mặc định:", err);
-    return cloneDefaults();
-  }
-});
-
-/**
- * Đọc thẳng, không qua cache. Chỉ dùng cho /customize: trình sửa là nơi bạn
- * nhìn vào để biết máy chủ đang giữ bản nào, nên nó không được phép nói dối.
- */
-export async function getContentFresh(): Promise<SiteContent> {
   try {
     return mergeIntoDefaults(await readRaw());
   } catch (err) {
     console.error("[content] không đọc được bản lưu, dùng mặc định:", err);
     return cloneDefaults();
   }
-}
+});
 
 export async function saveContent(next: SiteContent): Promise<SiteContent> {
   // Trên Vercel, filesystem chỉ đọc. Không có token Blob mà cứ ghi file thì
@@ -169,10 +151,5 @@ export async function saveContent(next: SiteContent): Promise<SiteContent> {
     await fs.writeFile(LOCAL_PATH, body, "utf8");
   }
 
-  // Việc xoá cache KHÔNG làm ở đây.
-  // revalidateTag chỉ đánh dấu hết hạn chứ không đảm bảo lần đọc kế tiếp đã
-  // thấy bản mới, nên lưu xong tải lại ngay vẫn ra nội dung cũ. Muốn đọc-thấy-
-  // ngay thì phải dùng updateTag, mà hàm đó chỉ chạy được trong Server Action.
-  // Xem app/customize/(editor)/actions.ts.
   return payload;
 }

@@ -109,8 +109,6 @@ export function EditorShell({
     setSave({ kind: "saving" });
 
     try {
-      // Server Action chứ không phải fetch: chỉ ở đó mới gọi được updateTag,
-      // thứ bảo đảm lưu xong tải lại là thấy ngay nội dung mới.
       const result = await saveSiteContent(draft);
 
       if (!result.ok) {
