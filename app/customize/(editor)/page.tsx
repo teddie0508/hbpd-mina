@@ -1,11 +1,13 @@
 import { EditorShell } from "@/components/customize/EditorShell";
-import { getContent, storageMode } from "@/lib/content/store";
+import { getContentFresh, storageMode } from "@/lib/content/store";
 import { FONTS, googleFontsHref } from "@/lib/fonts";
 
 export const dynamic = "force-dynamic";
 
 export default async function CustomizePage() {
-  const content = await getContent();
+  // Đọc bỏ qua cache: trình sửa phải luôn hiện đúng bản máy chủ đang giữ,
+  // vì đây chính là chỗ bạn nhìn vào để biết lưu đã ăn hay chưa.
+  const content = await getContentFresh();
 
   // Nạp toàn bộ font trong registry để ô xem thử hiện đúng mặt chữ.
   // Chỉ trang này mới nặng như vậy; trang Mina xem chỉ tải đúng font đang dùng.

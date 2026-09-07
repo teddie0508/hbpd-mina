@@ -45,7 +45,7 @@ lib/
   {fonts,theme,auth,placeholder,bouquet,crop,text,cx}.ts
 ```
 
-## Bảy cái bẫy đã gặp, đừng dẫm lại
+## Chín cái bẫy đã gặp, đừng dẫm lại
 
 1. **Không khai `--font-*` trong `@theme`.** Biến trong `@theme` nằm ở `:root` nên `var()` bị thay thế **ngay tại `:root`**; khối con đặt lại `--f-heading` sẽ vô tác dụng. Font phải khai bằng `@utility font-heading { font-family: var(--f-heading) }`.
 
@@ -60,6 +60,10 @@ lib/
 6. **Đừng đặt `force-dynamic` cho các trang chỉ đọc nội dung.** Mỗi lần chuyển trang máy chủ lại gọi Vercel Blob hai lượt trước khi trả HTML, và route động thì `<Link prefetch>` không nạp trước được — chuyển cảnh khựng hẳn khi mạng yếu. Cách đúng: bọc phần đọc trong `unstable_cache` gắn nhãn, `revalidateTag` khi lưu, và để trang dựng tĩnh. Riêng `/` vẫn phải động vì đọc cookie và giờ hiện tại. Lưu ý Next 16 đổi chữ ký thành `revalidateTag(tag, { expire: 0 })`.
 
 7. **Chỉ cache dữ liệu thô, đừng cache kết quả đã trộn với defaults.** `unstable_cache` từng bọc cả `mergeIntoDefaults`, nên khi thêm field mới vào schema, bản nằm sẵn trong cache vẫn tính theo defaults cũ — vừa deploy xong là trang văng lỗi "Cannot read properties of undefined", mãi tới khi có ai bấm Lưu mới hết. Nay cache đúng phần đọc đĩa, còn trộn lại mỗi lần đọc.
+
+8. **`revalidateTag` KHÔNG bảo đảm ghi xong đọc lại là thấy.** Nó chỉ đánh dấu hết hạn, nên lưu xong tải lại trang vẫn ra bản cũ một lúc — báo thành công mà tưởng như không có gì đổi. Muốn đọc-thấy-ngay phải dùng `updateTag`, mà hàm đó **chỉ chạy được trong Server Action**. Vì vậy đường lưu là Server Action (`app/customize/(editor)/actions.ts`) chứ không phải Route Handler. Trình sửa còn đọc qua `getContentFresh()` bỏ qua cache, vì đó là nơi bạn nhìn vào để kiểm chứng.
+
+9. **JPEG không có kênh alpha.** Khâu cắt ảnh từng xuất JPEG nên icon đã xoá nền hiện ra với nền đen đặc. Nay xuất WebP (trình duyệt không hỗ trợ thì tự lùi về PNG — cũng có alpha).
 
 Ngoài ra: `placehold.co` mặc định trả SVG mà bộ tối ưu ảnh của Next chặn SVG — URL ảnh giữ chỗ phải có đuôi `.png`.
 
@@ -80,8 +84,7 @@ el.textContent = `
 ## Việc còn lại
 
 - [ ] **Phase 7** — chạy thử thật trên Safari macOS + iOS: animation mở phong bì, mưa cánh hoa ở 120Hz, nhạc bật đúng lúc chạm, xoay ngang
-- [ ] Tạo Blob store trên Vercel, đặt `CUSTOMIZE_PASSWORD` + `AUTH_SECRET`, deploy
-- [ ] Sau deploy lần đầu: đăng nhập /customize và bấm Lưu một lần, để nội dung được ghi lên Blob
+- [x] Đã deploy: a-special-gift-to-my-love.vercel.app · Blob store dùng chung, tiền tố `mina/` · region SIN1
 
 `.data/` đã gitignore nên không bao giờ lên Vercel — bản deploy tự dùng mặc định trong `defaults.ts`, tức đếm ngược tới 02/11/2026 có hiệu lực ngay.
 

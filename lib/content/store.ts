@@ -1,7 +1,7 @@
 import "server-only";
 
 import { list, put } from "@vercel/blob";
-import { revalidateTag, unstable_cache } from "next/cache";
+import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -9,8 +9,8 @@ import path from "node:path";
 import { cloneDefaults } from "./defaults";
 import { CONTENT_VERSION, type SiteContent } from "./schema";
 
-/** Nhãn để xoá cache nội dung mỗi khi bạn bấm Lưu ở /customize. */
-const CONTENT_TAG = "site-content";
+/** Nhãn để xoá cache nội dung mỗi khi bấm Lưu ở /customize. */
+export const CONTENT_TAG = "site-content";
 
 /**
  * Tiền tố riêng của dự án trong Blob store.
@@ -129,10 +129,26 @@ export const getContent = cache(async (): Promise<SiteContent> => {
   }
 });
 
+/**
+ * Đọc thẳng, không qua cache. Chỉ dùng cho /customize: trình sửa là nơi bạn
+ * nhìn vào để biết máy chủ đang giữ bản nào, nên nó không được phép nói dối.
+ */
+export async function getContentFresh(): Promise<SiteContent> {
+  try {
+    return mergeIntoDefaults(await readRaw());
+  } catch (err) {
+    console.error("[content] không đọc được bản lưu, dùng mặc định:", err);
+    return cloneDefaults();
+  }
+}
+
 export async function saveContent(next: SiteContent): Promise<SiteContent> {
   // Trên Vercel, filesystem chỉ đọc. Không có token Blob mà cứ ghi file thì
   // sẽ ném lỗi EROFS rất khó hiểu, nên chặn sớm và nói thẳng nguyên nhân.
-  if (!usingBlob() && process.env.NODE_ENV === "production") {
+  //
+  // Nhận biết bằng biến VERCEL chứ không phải NODE_ENV: chạy bản production
+  // ngay trên máy cũng có NODE_ENV=production, mà ở đó ghi file vẫn bình thường.
+  if (!usingBlob() && process.env.VERCEL) {
     throw new Error(
       "Chưa nối Blob Storage (thiếu BLOB_READ_WRITE_TOKEN), nên không lưu được. " +
         "Vào Vercel → Storage → Connect, nhớ tick ô tạo read-write token, rồi Redeploy.",
@@ -159,10 +175,10 @@ export async function saveContent(next: SiteContent): Promise<SiteContent> {
     await fs.writeFile(LOCAL_PATH, body, "utf8");
   }
 
-  // Xoá nhãn để các trang tĩnh dựng lại với nội dung mới ngay lần xem kế tiếp.
-  // Next 16 bắt buộc có tham số thời hạn; expire 0 nghĩa là hết hiệu lực ngay,
-  // để vừa bấm Lưu xong mở trang là thấy nội dung mới.
-  revalidateTag(CONTENT_TAG, { expire: 0 });
-
+  // Việc xoá cache KHÔNG làm ở đây.
+  // revalidateTag chỉ đánh dấu hết hạn chứ không đảm bảo lần đọc kế tiếp đã
+  // thấy bản mới, nên lưu xong tải lại ngay vẫn ra nội dung cũ. Muốn đọc-thấy-
+  // ngay thì phải dùng updateTag, mà hàm đó chỉ chạy được trong Server Action.
+  // Xem app/customize/(editor)/actions.ts.
   return payload;
 }

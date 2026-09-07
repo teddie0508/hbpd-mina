@@ -1,9 +1,11 @@
 "use client";
 
+import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import { saveSiteContent } from "@/app/customize/(editor)/actions";
 import type { SiteContent } from "@/lib/content/schema";
 import { cx } from "@/lib/cx";
 
@@ -91,36 +93,25 @@ export function EditorShell({
     setSave({ kind: "saving" });
 
     try {
-      const res = await fetch("/api/content", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(draft),
-      });
+      // Server Action chứ không phải fetch: chỉ ở đó mới gọi được updateTag,
+      // thứ bảo đảm lưu xong tải lại là thấy ngay nội dung mới.
+      const result = await saveSiteContent(draft);
 
-      const data = (await res.json().catch(() => null)) as {
-        error?: string;
-        content?: SiteContent;
-        storage?: "blob" | "local";
-      } | null;
-
-      if (!res.ok) {
-        setSave({
-          kind: "failed",
-          reason: data?.error ?? `Máy chủ trả về lỗi ${res.status}`,
-        });
+      if (!result.ok) {
+        setSave({ kind: "failed", reason: result.error ?? "Lưu thất bại." });
         return;
       }
 
       // Nhận lại dấu thời gian của máy chủ, để bản nháp và bản đã lưu khớp nhau.
-      if (data?.content?.updatedAt) {
-        const stamp = data.content.updatedAt;
+      if (result.updatedAt) {
+        const stamp = result.updatedAt;
         setDraft((d) => ({ ...d, updatedAt: stamp }));
       }
 
       setSave({
         kind: "saved",
         at: new Date(),
-        storage: data?.storage ?? storage,
+        storage: result.storage ?? storage,
       });
       router.refresh();
     } catch {
@@ -205,8 +196,6 @@ export function EditorShell({
         </nav>
       </header>
 
-      <SaveBanner state={save} onDismiss={() => setSave({ kind: "idle" })} />
-
       <main className="mt-5">
         {tab === "general" ? (
           <GeneralPanel content={draft} onChange={patch} />
@@ -248,81 +237,105 @@ export function EditorShell({
           />
         ) : null}
       </main>
+
+      <SaveToast state={save} onDismiss={() => setSave({ kind: "idle" })} />
     </div>
   );
 }
 
-/** Báo rõ đã lưu được hay không, và nếu không thì vì sao. */
-function SaveBanner({
+/** Bao lâu thì thông báo thành công tự biến mất. Lỗi thì giữ nguyên cho đọc kỹ. */
+const SUCCESS_TIMEOUT_MS = 5000;
+
+/**
+ * Thông báo nổi ở góc dưới. Trước đây là dải nằm trên đầu trang, nhưng khi
+ * đang cuộn ở giữa form thì bấm Lưu xong chẳng thấy gì — phải cuộn ngược lên
+ * mới biết kết quả.
+ */
+function SaveToast({
   state,
   onDismiss,
 }: {
   state: SaveState;
   onDismiss: () => void;
 }) {
-  if (state.kind === "idle") return null;
-
-  if (state.kind === "saving") {
-    return (
-      <p className="border-mist/25 bg-base/50 text-mist/80 mt-4 rounded-lg border px-3.5 py-2.5 text-sm">
-        Đang lưu...
-      </p>
-    );
-  }
-
-  if (state.kind === "saved") {
-    return (
-      <div
-        role="status"
-        className="mt-4 flex items-start gap-3 rounded-lg border border-emerald-400/40 bg-emerald-400/10 px-3.5 py-2.5"
-      >
-        <span aria-hidden className="mt-0.5 text-emerald-300">
-          ✓
-        </span>
-        <div className="min-w-0 flex-1 text-sm text-emerald-100">
-          <p className="font-medium">
-            Đã lưu thành công lúc {formatTime(state.at)}
-          </p>
-          <p className="mt-0.5 text-[12px] text-emerald-200/70">
-            {state.storage === "blob"
-              ? "Nội dung đã ghi lên Vercel Blob. Mở lại trang chính là thấy ngay."
-              : "Đã ghi vào .data/content.json trên máy này."}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={onDismiss}
-          aria-label="Đóng thông báo"
-          className="shrink-0 text-emerald-200/60 transition-colors hover:text-emerald-100"
-        >
-          ✕
-        </button>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (state.kind !== "saved") return;
+    const id = window.setTimeout(onDismiss, SUCCESS_TIMEOUT_MS);
+    return () => window.clearTimeout(id);
+  }, [state, onDismiss]);
 
   return (
-    <div
-      role="alert"
-      className="mt-4 flex items-start gap-3 rounded-lg border border-red-400/40 bg-red-400/10 px-3.5 py-2.5"
-    >
-      <span aria-hidden className="mt-0.5 text-red-300">
-        !
-      </span>
-      <div className="min-w-0 flex-1 text-sm text-red-100">
-        <p className="font-medium">Lưu thất bại</p>
-        <p className="mt-0.5 text-[12px] leading-relaxed text-red-200/80">
-          {state.reason}
-        </p>
-      </div>
-      <button
-        type="button"
-        onClick={onDismiss}
-        aria-label="Đóng thông báo"
-        className="shrink-0 text-red-200/60 transition-colors hover:text-red-100"
-      >
-        ✕
-      </button>
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:justify-end sm:pr-6">
+      <AnimatePresence>
+        {state.kind === "idle" ? null : (
+          <motion.div
+            key={state.kind}
+            role={state.kind === "failed" ? "alert" : "status"}
+            initial={{ opacity: 0, y: 24, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: 0.97 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className={cx(
+              "pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-xl border px-4 py-3 shadow-2xl shadow-black/40 backdrop-blur",
+              state.kind === "saved" &&
+                "border-emerald-400/40 bg-emerald-500/15 text-emerald-100",
+              state.kind === "failed" &&
+                "border-red-400/45 bg-red-500/15 text-red-100",
+              state.kind === "saving" &&
+                "border-mist/25 bg-base/85 text-mist/85",
+            )}
+          >
+            {state.kind === "saving" ? (
+              <span
+                aria-hidden
+                className="border-mist/30 border-t-cream mt-0.5 size-4 shrink-0 animate-spin rounded-full border-2"
+              />
+            ) : (
+              <span
+                aria-hidden
+                className="mt-0.5 shrink-0 text-base leading-none"
+              >
+                {state.kind === "saved" ? "✓" : "!"}
+              </span>
+            )}
+
+            <div className="min-w-0 flex-1 text-sm">
+              {state.kind === "saving" ? (
+                <p className="font-medium">Đang lưu...</p>
+              ) : state.kind === "saved" ? (
+                <>
+                  <p className="font-medium">
+                    Đã lưu lúc {formatTime(state.at)}
+                  </p>
+                  <p className="mt-0.5 text-[12px] opacity-75">
+                    {state.storage === "blob"
+                      ? "Đã ghi lên Vercel Blob. Mở lại trang chính là thấy ngay."
+                      : "Đã ghi vào .data/content.json trên máy này."}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="font-medium">Lưu thất bại</p>
+                  <p className="mt-0.5 text-[12px] leading-relaxed opacity-85">
+                    {state.reason}
+                  </p>
+                </>
+              )}
+            </div>
+
+            {state.kind === "saving" ? null : (
+              <button
+                type="button"
+                onClick={onDismiss}
+                aria-label="Đóng thông báo"
+                className="shrink-0 opacity-60 transition-opacity hover:opacity-100"
+              >
+                ✕
+              </button>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
