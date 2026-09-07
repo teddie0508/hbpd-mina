@@ -26,7 +26,16 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 export async function cropToBlob(
   imageSrc: string,
   area: CropArea,
-  mimeType = "image/jpeg",
+  /**
+   * WebP chứ KHÔNG phải JPEG.
+   * JPEG không có kênh alpha, nên icon nền trong suốt sẽ bị ép phẳng lên nền
+   * canvas và biến thành nền đen đặc. WebP giữ được độ trong, mà file lại
+   * nhẹ hơn JPEG cùng chất lượng.
+   *
+   * Trình duyệt nào không mã hoá được WebP thì theo chuẩn sẽ tự lùi về PNG —
+   * cũng có alpha, nên trong mọi trường hợp ảnh đều không mất nền trong suốt.
+   */
+  mimeType = "image/webp",
   quality = 0.9,
 ): Promise<Blob> {
   const image = await loadImage(imageSrc);

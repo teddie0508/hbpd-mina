@@ -13,9 +13,17 @@ import { isPlaceholder } from "@/lib/placeholder";
 
 import { CropDialog } from "./CropDialog";
 
+/** Đuôi tệp phải khớp kiểu thật, vì máy chủ dựa vào đó để đặt tên khi lưu. */
+const EXTENSION: Record<string, string> = {
+  "image/webp": "webp",
+  "image/png": "png",
+  "image/jpeg": "jpg",
+};
+
 async function uploadBlob(blob: Blob): Promise<string> {
   const form = new FormData();
-  form.append("file", new File([blob], "photo.jpg", { type: blob.type }));
+  const ext = EXTENSION[blob.type] ?? "bin";
+  form.append("file", new File([blob], `photo.${ext}`, { type: blob.type }));
 
   const res = await fetch("/api/upload", { method: "POST", body: form });
   if (!res.ok) {
