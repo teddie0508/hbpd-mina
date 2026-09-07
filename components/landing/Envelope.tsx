@@ -1,7 +1,10 @@
 "use client";
 
 import { motion, useReducedMotion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+/** Thời lượng bản rút gọn, dùng khi máy bật "giảm chuyển động". */
+const REDUCED_EXIT = 0.5;
 
 /**
  * Phong bì đóng, chạm vào thì bung sáp niêm phong, lật nắp, lá thư trồi lên
@@ -27,17 +30,27 @@ export function Envelope({
 }) {
   const [opened, setOpened] = useState(false);
   const reduced = useReducedMotion();
+  const timerRef = useRef<number | null>(null);
 
-  // Người dùng bật "Giảm chuyển động" thì bỏ qua hoạt cảnh, đi thẳng vào trong.
-  const speed = reduced ? 0.15 : 1;
-  const t = (seconds: number) => seconds * speed;
+  useEffect(() => {
+    return () => {
+      if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const t = (seconds: number) => seconds;
 
   function handleOpen() {
     if (opened) return;
     setOpened(true);
     onOpen();
+
+    // Máy bật "giảm chuyển động" thì dùng hẳn một kịch bản khác: chỉ mờ dần
+    // rồi sang trang. Trước đây tôi tua nhanh chính hoạt cảnh cũ gấp bảy lần
+    // rồi chuyển trang ngay lập tức, nên nó bị cắt ngang giữa chừng — nhìn
+    // như trang bị giật chứ không phải như một lựa chọn có chủ đích.
     if (reduced) {
-      onFinished();
+      timerRef.current = window.setTimeout(onFinished, REDUCED_EXIT * 1000);
     }
   }
 
@@ -51,16 +64,26 @@ export function Envelope({
         style={{ transformStyle: "preserve-3d" }}
         animate={
           opened
-            ? { scale: [1, 0.96, 7.5], opacity: [1, 1, 0] }
+            ? reduced
+              ? { opacity: 0 }
+              : // Phóng tới 5 lần là đủ cảm giác "chui vào trong"; trước đây
+                // để 7.5 nên máy tắt tăng tốc phần cứng phải dựng ảnh to gấp
+                // rưỡi mà cuối cùng lớp loé sáng cũng che gần hết.
+                { scale: [1, 0.96, 5], opacity: [1, 1, 0] }
             : { scale: 1, opacity: 1 }
         }
-        transition={{
-          duration: t(1.5),
-          times: [0, 0.35, 1],
-          delay: opened ? t(0.55) : 0,
-          ease: [0.55, 0, 0.35, 1],
-        }}
+        transition={
+          reduced
+            ? { duration: REDUCED_EXIT * 0.8, ease: "easeOut" }
+            : {
+                duration: t(1.5),
+                times: [0, 0.35, 1],
+                delay: opened ? t(0.55) : 0,
+                ease: [0.55, 0, 0.35, 1],
+              }
+        }
         onAnimationComplete={() => {
+          // Bản rút gọn tự hẹn giờ riêng ở handleOpen.
           if (opened && !reduced) onFinished();
         }}
       >
@@ -97,7 +120,9 @@ export function Envelope({
                 "0 6px 18px color-mix(in srgb, var(--c-ink) 25%, transparent)",
             }}
             animate={
-              opened ? { y: "-34%", scale: 1.04 } : { y: "0%", scale: 1 }
+              opened && !reduced
+                ? { y: "-34%", scale: 1.04 }
+                : { y: "0%", scale: 1 }
             }
             transition={{
               duration: t(0.7),
@@ -108,7 +133,7 @@ export function Envelope({
             {/* Vài dòng chữ gợi ý, mờ dần khi lá thư trồi lên. */}
             <motion.span
               className="absolute inset-x-[14%] top-[16%] block space-y-[0.45rem]"
-              animate={{ opacity: opened ? 0.9 : 0 }}
+              animate={{ opacity: opened && !reduced ? 0.9 : 0 }}
               transition={{ duration: t(0.4), delay: t(0.6) }}
             >
               {[100, 88, 94, 72].map((w, i) => (
@@ -148,7 +173,7 @@ export function Envelope({
               filter: "drop-shadow(0 3px 5px rgba(0,0,0,0.18))",
             }}
             animate={
-              opened
+              opened && !reduced
                 ? { rotateX: -174, zIndex: [30, 30, 5] }
                 : { rotateX: 0, zIndex: 30 }
             }
@@ -171,7 +196,7 @@ export function Envelope({
                 "0 2px 8px color-mix(in srgb, var(--c-ink) 45%, transparent), inset 0 -2px 6px color-mix(in srgb, var(--c-ink) 30%, transparent)",
             }}
             animate={
-              opened
+              opened && !reduced
                 ? {
                     scale: [1, 1.18, 0.2],
                     opacity: [1, 1, 0],

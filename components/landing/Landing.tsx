@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
@@ -23,6 +23,7 @@ export function Landing({
 }) {
   const router = useRouter();
   const audio = useAudio();
+  const reduced = useReducedMotion();
   const [locked, setLocked] = useState(lockedOnServer);
   const [opening, setOpening] = useState(false);
 
@@ -95,7 +96,11 @@ export function Landing({
 
       {/* Portal ra <body>: đặt trong phong bì thì bị perspective giam lại,
           chỉ phủ đúng khung phong bì thay vì cả màn hình. */}
-      <WarmFlash show={opening} duration={0.95} delay={0.55} />
+      <WarmFlash
+        show={opening}
+        duration={reduced ? 0.3 : 0.95}
+        delay={reduced ? 0.05 : 0.55}
+      />
     </main>
   );
 }
