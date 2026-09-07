@@ -89,6 +89,11 @@ el.textContent = `
 `;
 ```
 
+## Hai cách kiểm tra dễ cho kết quả sai
+
+- **Đừng tìm chuỗi nội dung trong HTML để đoán trang đang vẽ màn nào.** Cả nội dung đếm ngược lẫn nội dung phong bì đều được nhúng vào HTML dưới dạng dữ liệu, nên "Sắp tới rồi" luôn xuất hiện dù đang vẽ màn nào. Phải tìm dấu hiệu chỉ có ở một màn: `Mở phong bì` (nút phong bì) hoặc `role="timer"` (đồng hồ).
+- **`fetch` tự đi theo chuyển hướng**, nên `r.status` là mã của trang đích chứ không phải 307. Muốn biết có bị chặn hay không thì xem `r.redirected` và `r.url`.
+
 ## Việc còn lại
 
 - [ ] **Phase 7** — chạy thử thật trên Safari macOS + iOS: animation mở phong bì, mưa cánh hoa ở 120Hz, nhạc bật đúng lúc chạm, xoay ngang

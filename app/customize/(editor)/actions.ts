@@ -2,12 +2,11 @@
 
 import { updateTag } from "next/cache";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 
 import { isEditor } from "@/lib/auth";
 import type { SiteContent } from "@/lib/content/schema";
 import { CONTENT_TAG, saveContent, storageMode } from "@/lib/content/store";
-import { GUEST_COOKIE } from "@/lib/gate";
+import { GUEST_COOKIE, GUEST_MAX_AGE } from "@/lib/gate";
 
 export interface SaveResult {
   ok: boolean;
@@ -65,8 +64,28 @@ export async function saveSiteContent(
   }
 }
 
-/** Tắt chế độ xem như Mina và quay lại trình sửa. */
-export async function stopViewingAsGuest(): Promise<void> {
-  (await cookies()).delete(GUEST_COOKIE);
-  redirect("/customize");
+/**
+ * Bật/tắt chế độ xem như Mina.
+ *
+ * Không redirect: trình sửa giữ bản nháp trong bộ nhớ trình duyệt, tải lại
+ * trang là mất sạch phần đang gõ dở. Bên gọi chỉ cần router.refresh() để lấy
+ * lại trạng thái mới, cách đó không dựng lại cây component nên bản nháp còn
+ * nguyên.
+ *
+ * Cookie dùng chung cho cả trình duyệt, nên bật ở tab này thì tab kia chỉ
+ * cần tải lại là thấy đúng những gì Mina thấy.
+ */
+export async function setGuestPreview(on: boolean): Promise<void> {
+  if (!(await isEditor())) return;
+
+  const jar = await cookies();
+  if (on) {
+    jar.set(GUEST_COOKIE, "1", {
+      path: "/",
+      sameSite: "lax",
+      maxAge: GUEST_MAX_AGE,
+    });
+  } else {
+    jar.delete(GUEST_COOKIE);
+  }
 }

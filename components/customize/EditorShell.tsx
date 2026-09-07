@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import {
   saveSiteContent,
-  stopViewingAsGuest,
+  setGuestPreview,
 } from "@/app/customize/(editor)/actions";
 import type { SiteContent } from "@/lib/content/schema";
 import { cx } from "@/lib/cx";
@@ -171,30 +171,27 @@ export function EditorShell({
             </Link>
 
             {/* Đăng nhập thì mặc định đi xuyên qua khoá đếm ngược, nên cần
-                một lối tự đặt mình vào vị trí người ngoài để kiểm tra.
+                một công tắc tự đặt mình vào vị trí người ngoài để kiểm tra.
+                Cookie dùng chung cả trình duyệt: bật ở đây rồi tải lại tab
+                đang mở trang chính là thấy đúng những gì Mina thấy. */}
+            <button
+              type="button"
+              onClick={async () => {
+                await setGuestPreview(!asGuest);
+                // Chỉ làm mới dữ liệu từ máy chủ, không dựng lại cây
+                // component, nên phần đang sửa dở vẫn còn nguyên.
+                router.refresh();
+              }}
+              className={cx(
+                "rounded-lg border px-3 py-1.5 text-xs transition-colors",
+                asGuest
+                  ? "border-amber-400/50 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20"
+                  : "border-mist/25 text-cream/80 hover:border-gold/50 hover:text-gold",
+              )}
+            >
+              {asGuest ? "Đang xem như Mina" : "Xem như Mina"}
+            </button>
 
-                Bật thì mở tab mới bằng liên kết thật, để không mất trang đang
-                sửa dở — và liên kết thì không bị chặn như cửa sổ bật lên.
-                Tắt thì ở lại đúng chỗ này. */}
-            {asGuest ? (
-              <form action={stopViewingAsGuest}>
-                <button
-                  type="submit"
-                  className="rounded-lg border border-amber-400/50 bg-amber-400/10 px-3 py-1.5 text-xs text-amber-200 transition-colors hover:bg-amber-400/20"
-                >
-                  Đang xem như Mina — tắt
-                </button>
-              </form>
-            ) : (
-              <a
-                href="/customize/as-guest"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="border-mist/25 text-cream/80 hover:border-gold/50 hover:text-gold rounded-lg border px-3 py-1.5 text-xs transition-colors"
-              >
-                Xem như Mina
-              </a>
-            )}
             <button
               type="button"
               onClick={logout}
