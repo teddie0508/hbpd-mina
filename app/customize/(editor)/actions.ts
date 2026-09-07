@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { isEditor } from "@/lib/auth";
 import type { SiteContent } from "@/lib/content/schema";
 import { CONTENT_TAG, saveContent, storageMode } from "@/lib/content/store";
-import { GUEST_COOKIE, GUEST_MAX_AGE } from "@/lib/gate";
+import { GUEST_COOKIE } from "@/lib/gate";
 
 export interface SaveResult {
   ok: boolean;
@@ -65,21 +65,7 @@ export async function saveSiteContent(
   }
 }
 
-/**
- * Bật chế độ xem như Mina: tạm thời bỏ đặc quyền của tài khoản chỉnh sửa để
- * thấy đúng những gì người ngoài thấy. Không có cái này thì cứ đăng nhập là
- * đi xuyên qua khoá, chẳng có cách nào kiểm tra cổng đếm ngược có đóng thật.
- */
-export async function viewAsGuest(): Promise<void> {
-  if (!(await isEditor())) return;
-  (await cookies()).set(GUEST_COOKIE, "1", {
-    path: "/",
-    sameSite: "lax",
-    maxAge: GUEST_MAX_AGE,
-  });
-  redirect("/");
-}
-
+/** Tắt chế độ xem như Mina và quay lại trình sửa. */
 export async function stopViewingAsGuest(): Promise<void> {
   (await cookies()).delete(GUEST_COOKIE);
   redirect("/customize");

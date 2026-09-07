@@ -8,7 +8,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
   saveSiteContent,
   stopViewingAsGuest,
-  viewAsGuest,
 } from "@/app/customize/(editor)/actions";
 import type { SiteContent } from "@/lib/content/schema";
 import { cx } from "@/lib/cx";
@@ -172,20 +171,30 @@ export function EditorShell({
             </Link>
 
             {/* Đăng nhập thì mặc định đi xuyên qua khoá đếm ngược, nên cần
-                một lối tự đặt mình vào vị trí người ngoài để kiểm tra. */}
-            <form action={asGuest ? stopViewingAsGuest : viewAsGuest}>
-              <button
-                type="submit"
-                className={cx(
-                  "rounded-lg border px-3 py-1.5 text-xs transition-colors",
-                  asGuest
-                    ? "border-amber-400/50 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20"
-                    : "border-mist/25 text-cream/80 hover:border-gold/50 hover:text-gold",
-                )}
+                một lối tự đặt mình vào vị trí người ngoài để kiểm tra.
+
+                Bật thì mở tab mới bằng liên kết thật, để không mất trang đang
+                sửa dở — và liên kết thì không bị chặn như cửa sổ bật lên.
+                Tắt thì ở lại đúng chỗ này. */}
+            {asGuest ? (
+              <form action={stopViewingAsGuest}>
+                <button
+                  type="submit"
+                  className="rounded-lg border border-amber-400/50 bg-amber-400/10 px-3 py-1.5 text-xs text-amber-200 transition-colors hover:bg-amber-400/20"
+                >
+                  Đang xem như Mina — tắt
+                </button>
+              </form>
+            ) : (
+              <a
+                href="/customize/as-guest"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="border-mist/25 text-cream/80 hover:border-gold/50 hover:text-gold rounded-lg border px-3 py-1.5 text-xs transition-colors"
               >
-                {asGuest ? "Đang xem như Mina — tắt" : "Xem như Mina"}
-              </button>
-            </form>
+                Xem như Mina
+              </a>
+            )}
             <button
               type="button"
               onClick={logout}
