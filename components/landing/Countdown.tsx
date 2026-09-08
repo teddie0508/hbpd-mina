@@ -52,11 +52,12 @@ export function Countdown({
     return () => window.clearInterval(id);
   }, [target, onUnlock]);
 
-  const units: Array<{ value: number; label: string }> = [
+  const units: Array<{ value: number; label: string; pulse?: boolean }> = [
     { value: left?.days ?? 0, label: "ngày" },
     { value: left?.hours ?? 0, label: "giờ" },
     { value: left?.minutes ?? 0, label: "phút" },
-    { value: left?.seconds ?? 0, label: "giây" },
+    // Chỉ ô giây nảy. Cho cả bốn ô cùng nảy thì thành giật, không ra nhịp thở.
+    { value: left?.seconds ?? 0, label: "giây", pulse: true },
   ];
 
   return (
@@ -90,12 +91,18 @@ export function Countdown({
               </span>
             ) : null}
             <div className="flex flex-col items-center gap-1">
-              <span
+              {/* Ô giây nảy một nhịp mỗi lần đổi số, cho đồng hồ có hơi thở.
+                  Đổi key theo giá trị nên motion dựng lại và chạy initial. */}
+              <motion.span
+                key={unit.pulse ? unit.value : undefined}
+                initial={unit.pulse ? { scale: 1.12 } : false}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 340, damping: 15 }}
                 className="font-body border-gold/20 bg-deep/50 text-gold grid min-w-[2.6em] place-items-center rounded-xl border px-2 py-2 text-[calc(clamp(1.6rem,6vw,2.8rem)*var(--fz-body,1))] leading-none tabular-nums"
                 style={{ fontVariantNumeric: "tabular-nums" }}
               >
                 {left === null ? "--" : String(unit.value).padStart(2, "0")}
-              </span>
+              </motion.span>
               <span className="font-body text-mist/60 text-[calc(0.65rem*var(--fz-body,1))] tracking-[0.18em] uppercase">
                 {unit.label}
               </span>

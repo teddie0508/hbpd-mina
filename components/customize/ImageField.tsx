@@ -25,12 +25,15 @@ export function ImageField({
   onChange,
   onRemove,
   label,
+  noteHint,
 }: {
   slot: ImageSlot;
   value: ImageAsset | null;
   onChange: (image: ImageAsset) => void;
   onRemove?: () => void;
   label?: string;
+  /** Có giá trị thì hiện thêm ô ghi chú mặt sau, dùng làm gợi ý trong ô. */
+  noteHint?: string;
 }) {
   const aspect = SLOT_ASPECT[slot];
   const inputRef = useRef<HTMLInputElement>(null);
@@ -132,6 +135,16 @@ export function ImageField({
             className="border-mist/15 bg-base/40 text-cream/80 placeholder:text-mist/35 focus:border-gold/40 w-full rounded-lg border px-2.5 py-1.5 text-xs outline-none"
           />
         </div>
+      ) : null}
+
+      {value && noteHint ? (
+        <input
+          type="text"
+          value={value.note ?? ""}
+          placeholder={noteHint}
+          onChange={(e) => onChange({ ...value, note: e.target.value })}
+          className="border-gold/20 bg-base/40 text-gold/85 placeholder:text-mist/35 focus:border-gold/50 w-full rounded-lg border px-2.5 py-1.5 text-xs outline-none"
+        />
       ) : null}
 
       {placeholder ? (

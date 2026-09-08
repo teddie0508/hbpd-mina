@@ -6,6 +6,7 @@ import { Ambience } from "@/components/ui/Ambience";
 import { BackLink } from "@/components/ui/BackLink";
 import { HeartBalloons } from "@/components/ui/HeartBalloons";
 import { Reveal } from "@/components/ui/Reveal";
+import { WordsReveal } from "@/components/ui/WordsReveal";
 import type { MessageContent } from "@/lib/content/schema";
 import { fontVars } from "@/lib/theme";
 import { toParagraphs } from "@/lib/text";
@@ -39,11 +40,12 @@ export function MessageScene({ content }: { content: MessageContent }) {
 
         <div className="measure mx-auto mt-10 space-y-7 sm:mt-12">
           {paragraphs.map((paragraph, i) => (
-            <Reveal key={i} delay={i * 0.06} amount={0.15}>
-              <p className="font-body text-cream/85 text-center text-[calc(clamp(1rem,3.4vw,1.15rem)*var(--fz-body,1))] leading-[1.85] text-pretty">
-                {paragraph}
-              </p>
-            </Reveal>
+            <WordsReveal
+              key={i}
+              text={paragraph}
+              delay={i * 0.15}
+              className="font-body text-cream/85 text-center text-[calc(clamp(1rem,3.4vw,1.15rem)*var(--fz-body,1))] leading-[1.85] text-pretty"
+            />
           ))}
         </div>
 

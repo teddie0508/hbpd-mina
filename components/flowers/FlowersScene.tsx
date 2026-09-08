@@ -12,6 +12,7 @@ import { toParagraphs } from "@/lib/text";
 import { fontVars } from "@/lib/theme";
 
 import { Bouquet } from "./Bouquet";
+import { PetalDrift } from "./PetalDrift";
 import { PetalStorm } from "./PetalStorm";
 
 /** Seed cố định cho lần dựng đầu, để máy chủ và trình duyệt ra cùng một bó. */
@@ -149,6 +150,38 @@ export function FlowersScene({ content }: { content: FlowersContent }) {
   );
 }
 
+/** Nhành lá nhỏ hai bên câu chúc, như vòng nguyệt quế thu gọn. */
+function Sprig({ flip = false }: { flip?: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 60"
+      aria-hidden
+      className="text-gold/55 hidden h-16 w-6 shrink-0 sm:block"
+      style={flip ? { transform: "scaleX(-1)" } : undefined}
+    >
+      <path
+        d="M18 4 C 10 18, 8 38, 12 56"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+      {[10, 20, 30, 40].map((y, i) => (
+        <ellipse
+          key={i}
+          cx={16 - i * 1.2}
+          cy={y + 4}
+          rx={5.5 - i * 0.4}
+          ry={2.1}
+          fill="currentColor"
+          opacity={0.75}
+          transform={`rotate(${-32 + i * 4} ${16 - i * 1.2} ${y + 4})`}
+        />
+      ))}
+    </svg>
+  );
+}
+
 function Finale({ content }: { content: FlowersContent }) {
   return (
     <motion.div
@@ -157,6 +190,21 @@ function Finale({ content }: { content: FlowersContent }) {
       transition={{ duration: 1, ease: "easeOut" }}
       className="relative z-10 mx-auto flex w-full max-w-xl flex-col items-center"
     >
+      {/* Cánh hoa còn sót lại trôi lác đác, nối tiếp màn mưa hoa vừa rồi. */}
+      <PetalDrift />
+
+      {/* Quầng sáng ấm sau tấm ảnh, để mắt dừng lại đúng chỗ đó. */}
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute top-0 left-1/2 -z-10 h-80 w-80 -translate-x-1/2 rounded-full blur-3xl"
+        style={{
+          background:
+            "radial-gradient(circle, color-mix(in srgb, var(--c-gold) 26%, transparent), transparent 70%)",
+        }}
+        initial={{ opacity: 0, scale: 0.7 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 1.6, delay: 0.2, ease: "easeOut" }}
+      />
       {content.finale.polaroid ? (
         <motion.div
           initial={{ opacity: 0, scale: 0.86, y: 24 }}
@@ -183,14 +231,18 @@ function Finale({ content }: { content: FlowersContent }) {
         {content.finale.caption}
       </motion.p>
 
-      <motion.p
+      <motion.div
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1, delay: 1.7, ease: [0.22, 1, 0.36, 1] }}
-        className="font-heading text-gold mt-10 text-center text-[calc(clamp(1.7rem,6.5vw,2.8rem)*var(--fz-heading,1))] leading-tight text-balance"
+        className="mt-10 flex items-center justify-center gap-4"
       >
-        {content.finale.closing}
-      </motion.p>
+        <Sprig />
+        <p className="font-heading text-gold text-center text-[calc(clamp(1.7rem,6.5vw,2.8rem)*var(--fz-heading,1))] leading-tight text-balance">
+          {content.finale.closing}
+        </p>
+        <Sprig flip />
+      </motion.div>
 
       <motion.div
         initial={{ opacity: 0 }}

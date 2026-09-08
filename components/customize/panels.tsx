@@ -400,7 +400,7 @@ export function MemoriesPanel({
         <SectionCard
           key={board.id}
           title={`Khối ảnh ${index + 1}`}
-          description={`Ảnh nền tỉ lệ ${SLOT_ASPECT.boardBackground}, ảnh nhỏ tỉ lệ ${SLOT_ASPECT.boardPhoto}.`}
+          description={`Ảnh nền tỉ lệ ${SLOT_ASPECT.boardBackground}, ảnh nhỏ tỉ lệ ${SLOT_ASPECT.boardPhoto}. Ảnh nào có ghi chú thì chạm vào sẽ lật ra mặt sau.`}
         >
           <div className="flex items-center justify-between gap-3">
             <div className="flex-1">
@@ -455,6 +455,7 @@ export function MemoriesPanel({
             max={MAX_BOARD_PHOTOS}
             items={board.photos}
             onChange={(photos) => patchBoard(index, { photos })}
+            noteHint="Ghi chú mặt sau, vd: 19/08 — lần đầu gặp em"
           />
         </SectionCard>
       ))}

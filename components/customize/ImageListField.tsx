@@ -20,12 +20,15 @@ export function ImageListField({
   onChange,
   max,
   label,
+  noteHint,
 }: {
   slot: ImageSlot;
   items: ImageAsset[];
   onChange: (items: ImageAsset[]) => void;
   max: number;
   label: string;
+  /** Truyền xuống để mỗi ảnh có thêm ô ghi chú mặt sau. */
+  noteHint?: string;
 }) {
   const replaceAt = (index: number, image: ImageAsset) =>
     onChange(items.map((item, i) => (i === index ? image : item)));
@@ -82,6 +85,7 @@ export function ImageListField({
                 slot={slot}
                 value={item}
                 label={`${label} ${index + 1}`}
+                noteHint={noteHint}
                 onChange={(image) => replaceAt(index, image)}
                 onRemove={() => removeAt(index)}
               />

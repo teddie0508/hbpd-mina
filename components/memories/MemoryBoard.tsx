@@ -2,8 +2,11 @@
 
 import { motion } from "motion/react";
 import Image from "next/image";
+import { useRef, useState } from "react";
 
-import { ASPECT_CSS, type MemoryBoard as Board } from "@/lib/content/schema";
+import type { MemoryBoard as Board } from "@/lib/content/schema";
+
+import { BoardPhoto } from "./BoardPhoto";
 
 /**
  * Vị trí từng tấm ảnh trên khối, tính theo % chiều rộng/cao của khối.
@@ -43,6 +46,26 @@ const PLANE =
 export function MemoryBoard({ board }: { board: Board }) {
   const photos = board.photos.slice(0, SPOTS.length);
 
+  // Vị trí con trỏ so với tâm khối, quy về khoảng -1..1.
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const boxRef = useRef<HTMLDivElement>(null);
+
+  // Chỉ theo con trỏ trên thiết bị có chuột thật. Trên điện thoại, sự kiện
+  // pointer sinh ra từ cú chạm sẽ làm ảnh giật một cái rồi đứng im.
+  const finePointer =
+    typeof window !== "undefined" &&
+    window.matchMedia("(pointer: fine)").matches;
+
+  const handleMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!finePointer) return;
+    const r = boxRef.current?.getBoundingClientRect();
+    if (!r) return;
+    setTilt({
+      x: ((e.clientX - r.left) / r.width - 0.5) * 2,
+      y: ((e.clientY - r.top) / r.height - 0.5) * 2,
+    });
+  };
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 40 }}
@@ -57,7 +80,12 @@ export function MemoryBoard({ board }: { board: Board }) {
         </h3>
       ) : null}
 
-      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl">
+      <div
+        ref={boxRef}
+        onPointerMove={handleMove}
+        onPointerLeave={() => setTilt({ x: 0, y: 0 })}
+        className="relative overflow-hidden rounded-2xl sm:rounded-3xl"
+      >
         {/* Ảnh nền của cả khối — thay được ở /customize. */}
         {board.background ? (
           <Image
@@ -156,34 +184,13 @@ export function MemoryBoard({ board }: { board: Board }) {
                 }
                 className="md:absolute md:w-[var(--w)] md:-translate-x-1/2 md:-translate-y-1/2"
               >
-                {/* Lớp trong lo animation. Để riêng vì transform inline của motion
-                  sẽ đè mất class translate/rotate của Tailwind nếu gộp chung. */}
-                <motion.div
-                  className="bg-paper rounded-[2px] p-1.5 shadow-[0_8px_22px_-6px_rgba(0,0,0,0.6)] md:p-[6%]"
-                  initial={{ opacity: 0, scale: 0.82, rotate: spot.rot }}
-                  whileInView={{ opacity: 1, scale: 1, rotate: spot.rot }}
-                  viewport={{ once: true, amount: 0.4 }}
-                  transition={{
-                    duration: 0.6,
-                    delay: 0.2 + i * 0.08,
-                    ease: [0.22, 1, 0.36, 1],
-                  }}
-                  whileHover={{ scale: 1.09, rotate: 0, zIndex: 30 }}
-                >
-                  <div
-                    className="relative w-full overflow-hidden"
-                    style={{ aspectRatio: ASPECT_CSS[photo.aspect] }}
-                  >
-                    <Image
-                      src={photo.url}
-                      alt={photo.alt}
-                      fill
-                      sizes="(max-width: 768px) 44vw, 200px"
-                      quality={90}
-                      className="object-cover"
-                    />
-                  </div>
-                </motion.div>
+                <BoardPhoto
+                  photo={photo}
+                  rotate={spot.rot}
+                  delay={0.2 + i * 0.08}
+                  tiltX={tilt.x}
+                  tiltY={tilt.y}
+                />
               </div>
             );
           })}

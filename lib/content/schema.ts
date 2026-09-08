@@ -30,6 +30,14 @@ export interface ImageAsset {
   id: string;
   url: string;
   alt: string;
+  /**
+   * Dòng ghi chú ở mặt sau tấm ảnh, kiểu "19/08 — lần đầu gặp em".
+   * Để trống thì ảnh không lật được.
+   *
+   * Không bắt buộc vì ảnh lưu từ trước không có trường này; mọi chỗ đọc phải
+   * lường trước giá trị undefined.
+   */
+  note?: string;
   /** Tỉ lệ ảnh đã được cắt theo, để trang chính render đúng khung. */
   aspect: AspectRatio;
 }
