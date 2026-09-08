@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Ambience } from "@/components/ui/Ambience";
 import { BackLink } from "@/components/ui/BackLink";
@@ -112,18 +112,30 @@ export function FlowersScene({ content }: { content: FlowersContent }) {
               whileTap={{ scale: 0.97 }}
               className="group border-gold/60 bg-gold/10 text-gold hover:bg-gold/20 focus-visible:ring-gold/60 relative mt-4 inline-flex items-center gap-2.5 overflow-hidden rounded-full border px-6 py-3 text-[clamp(0.95rem,3.2vw,1.1rem)] tracking-wide italic shadow-[0_0_24px_-6px_var(--c-gold)] transition-colors outline-none focus-visible:ring-2"
             >
-              {/* Vệt sáng quét ngang rất chậm, để mắt bắt được là có gì đó ở đây. */}
-              <motion.span
+              {/* Vệt sáng quét ngang rất chậm, để mắt bắt được là có gì đó ở đây.
+                  Chạy bằng `x` chứ không phải `left`: `left` là thuộc tính bố
+                  cục, trình duyệt phải tính lại bố cục của nút ở MỌI khung hình,
+                  lặp vô hạn suốt lúc màn hoa đang mở. `x` là phép biến hình,
+                  card đồ hoạ lo trọn. */}
+              <span
                 aria-hidden
-                className="pointer-events-none absolute inset-y-0 w-16 skew-x-[-20deg] bg-[linear-gradient(90deg,transparent,color-mix(in_srgb,var(--c-gold)_45%,transparent),transparent)]"
-                animate={{ left: ["-20%", "120%"] }}
-                transition={{
-                  duration: 2.6,
-                  repeat: Infinity,
-                  repeatDelay: 3.4,
-                  ease: "easeInOut",
-                }}
-              />
+                className="pointer-events-none absolute inset-0 overflow-hidden"
+              >
+                <motion.span
+                  className="absolute inset-y-0 left-0 w-full bg-[linear-gradient(90deg,transparent_38%,color-mix(in_srgb,var(--c-gold)_45%,transparent)_50%,transparent_62%)]"
+                  // Độ nghiêng phải giao cho motion chứ không dùng class
+                  // skew-x-*: motion ghi thẳng `transform` khi chạy `x`, ghi
+                  // đè luôn transform của Tailwind và vệt sáng mất hẳn nét xiên.
+                  style={{ skewX: -20 }}
+                  animate={{ x: ["-100%", "100%"] }}
+                  transition={{
+                    duration: 2.6,
+                    repeat: Infinity,
+                    repeatDelay: 3.4,
+                    ease: "easeInOut",
+                  }}
+                />
+              </span>
               <svg
                 viewBox="0 0 24 24"
                 fill="currentColor"
@@ -183,6 +195,15 @@ function Sprig({ flip = false }: { flip?: boolean }) {
 }
 
 function Finale({ content }: { content: FlowersContent }) {
+  // Màn mưa hoa còn nhạt dần thêm gần hai giây nữa sau khi phần kết hiện ra.
+  // Chờ nó tắt hẳn rồi mới thả lớp cánh hoa trôi, để không có lúc nào hai tấm
+  // canvas phủ kín màn hình cùng tô một lượt.
+  const [drifting, setDrifting] = useState(false);
+  useEffect(() => {
+    const id = window.setTimeout(() => setDrifting(true), 1800);
+    return () => window.clearTimeout(id);
+  }, []);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -191,15 +212,19 @@ function Finale({ content }: { content: FlowersContent }) {
       className="relative z-10 mx-auto flex w-full max-w-xl flex-col items-center"
     >
       {/* Cánh hoa còn sót lại trôi lác đác, nối tiếp màn mưa hoa vừa rồi. */}
-      <PetalDrift />
+      {drifting ? <PetalDrift /> : null}
 
-      {/* Quầng sáng ấm sau tấm ảnh, để mắt dừng lại đúng chỗ đó. */}
+      {/* Quầng sáng ấm sau tấm ảnh, để mắt dừng lại đúng chỗ đó.
+          Trước đây quầng này là một khối 320 px kèm bộ lọc làm mờ 64 px, lại
+          vừa phóng to dần — Safari phải dựng lại toàn bộ vết mờ ở từng khung
+          hình, một trong những việc nặng nhất trên iOS. Giờ độ mềm nằm luôn
+          trong các mốc màu của gradient: nhìn y hệt mà không còn bộ lọc nào. */}
       <motion.div
         aria-hidden
-        className="pointer-events-none absolute top-0 left-1/2 -z-10 h-80 w-80 -translate-x-1/2 rounded-full blur-3xl"
+        className="pointer-events-none absolute top-0 left-1/2 -z-10 h-96 w-96 -translate-x-1/2 rounded-full"
         style={{
           background:
-            "radial-gradient(circle, color-mix(in srgb, var(--c-gold) 26%, transparent), transparent 70%)",
+            "radial-gradient(circle, color-mix(in srgb, var(--c-gold) 24%, transparent) 0%, color-mix(in srgb, var(--c-gold) 13%, transparent) 32%, color-mix(in srgb, var(--c-gold) 4%, transparent) 58%, transparent 78%)",
         }}
         initial={{ opacity: 0, scale: 0.7 }}
         animate={{ opacity: 1, scale: 1 }}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /** Cánh hoa lấy đúng tông của bó hoa, để hai phần trông cùng một thế giới. */
 const PETAL_COLORS = [
@@ -33,6 +33,26 @@ const DRIFT_FROM = 2.4;
 const FADE_FROM = 3.0;
 const FADE_OVER = 1.8;
 
+/*
+ * Mọi hằng số chuyển động dưới đây tính theo GIÂY, không theo khung hình.
+ *
+ * Bản đầu tiên nhân vận tốc với một con số cố định ở mỗi khung hình. Trên màn
+ * 60 Hz thì đúng, nhưng iPhone 15 Pro Max là màn 120 Hz: Safari gọi gấp đôi
+ * số khung hình, nên cánh hoa bị hãm nhanh gấp đôi và chỉ đi được nửa quãng
+ * đường trong cùng khoảng thời gian. Nhìn ra đúng như máy đang giật, dù máy
+ * không rớt lấy một khung hình nào.
+ */
+/** Sau một giây, vận tốc lao vào chỉ còn lại chừng này. */
+const RUSH_KEEP = 0.4025;
+/** Pha lửng lơ bám theo vận tốc đích nhanh cỡ nào (phần còn lại sau một giây). */
+const DRIFT_KEEP = 0.0247;
+const DRIFT_SWAY = 100;
+const DRIFT_FALL = 233;
+/** Pha trôi đi: rơi nhanh dần và tản ngang. */
+const TAIL_GRAVITY = 34;
+const TAIL_SWAY = 96;
+const TAIL_KEEP = 0.74;
+
 /**
  * Hàng trăm cánh hoa ùa vào lấp kín màn hình rồi trôi đi.
  * Vẽ bằng Canvas 2D chứ không phải DOM — vài trăm phần tử DOM sẽ làm
@@ -50,8 +70,18 @@ export function PetalStorm({
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
 
+  // Tự giữ vòng đời của mình. Nếu chỉ nghe theo `active` thì đúng lúc gọi
+  // onDone là khối cha đổi cảnh, `active` thành false, canvas bị gỡ ngay —
+  // đoạn nhạt dần bên dưới không bao giờ được chạy, cánh hoa biến mất phựt
+  // một cái.
+  const [running, setRunning] = useState(false);
+
   useEffect(() => {
-    if (!active) return;
+    if (active) setRunning(true);
+  }, [active]);
+
+  useEffect(() => {
+    if (!running) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -63,14 +93,20 @@ export function PetalStorm({
     ).matches;
     if (reduced) {
       // Bỏ qua hoạt cảnh, vào thẳng phần kết.
-      const id = window.setTimeout(() => doneRef.current(), 250);
+      const id = window.setTimeout(() => {
+        doneRef.current();
+        setRunning(false);
+      }, 250);
       return () => window.clearTimeout(id);
     }
 
-    // Giới hạn tỉ lệ điểm ảnh ở 2: màn Retina đẹp mà không phải vẽ thừa.
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     let width = window.innerWidth;
     let height = window.innerHeight;
+    // Màn hẹp là điện thoại: hạ tỉ lệ điểm ảnh xuống 1,5 thay vì 2. Cánh hoa
+    // vốn mềm và mờ nên mắt không nhận ra, mà số điểm ảnh phải tô ở mỗi khung
+    // hình chỉ còn hơn một nửa.
+    const small = width < 640;
+    const dpr = Math.min(window.devicePixelRatio || 1, small ? 1.5 : 2);
 
     const resize = () => {
       width = window.innerWidth;
@@ -85,13 +121,14 @@ export function PetalStorm({
     window.addEventListener("resize", resize);
 
     // Màn hẹp thì ít cánh hơn, vừa đủ dày mà không tốn pin.
-    const count = width < 640 ? 130 : 260;
+    const count = small ? 100 : 260;
     const petals: Petal[] = Array.from({ length: count }, () =>
       spawn(width, height),
     );
 
     let raf = 0;
     let start = 0;
+    let last = 0;
     let finished = false;
 
     const finish = () => {
@@ -102,14 +139,26 @@ export function PetalStorm({
 
     // Lưới an toàn: nếu tab bị ẩn giữa chừng, trình duyệt dừng requestAnimationFrame
     // và onDone sẽ không bao giờ chạy — Mina sẽ kẹt lại ở màn hình trống.
-    // Hẹn giờ độc lập bảo đảm phần kết luôn hiện ra.
-    const fallback = window.setTimeout(finish, (FADE_FROM + 0.8) * 1000);
+    // Hai cái hẹn giờ độc lập bảo đảm phần kết luôn hiện ra và canvas luôn được dọn.
+    const fallbackDone = window.setTimeout(finish, (FADE_FROM + 0.8) * 1000);
+    const fallbackEnd = window.setTimeout(
+      () => setRunning(false),
+      (FADE_FROM + FADE_OVER + 1) * 1000,
+    );
 
     const frame = (now: number) => {
-      if (!start) start = now;
+      if (!start) {
+        start = now;
+        last = now;
+      }
       const elapsed = (now - start) / 1000;
-      // Chốt bước thời gian để một khung hình rớt không làm cánh hoa nhảy vọt.
-      const dt = Math.min(1 / 30, 1 / 60);
+      // Bước thời gian thật, chặn trên 50 ms phòng khi máy vừa khựng một nhịp.
+      const dt = Math.min(0.05, (now - last) / 1000) || 1 / 60;
+      last = now;
+
+      const rushKeep = Math.pow(RUSH_KEEP, dt);
+      const driftCatch = 1 - Math.pow(DRIFT_KEEP, dt);
+      const tailKeep = Math.pow(TAIL_KEEP, dt);
 
       ctx.clearRect(0, 0, width, height);
 
@@ -121,18 +170,18 @@ export function PetalStorm({
       for (const petal of petals) {
         if (elapsed < RUSH_UNTIL) {
           // Giai đoạn ùa vào: bay nhanh về giữa rồi chậm dần.
-          petal.vx *= 0.985;
-          petal.vy *= 0.985;
+          petal.vx *= rushKeep;
+          petal.vy *= rushKeep;
         } else if (elapsed < DRIFT_FROM) {
-          // Lửng lơ, đảo qua lại.
-          petal.vx =
-            petal.vx * 0.94 + Math.sin(elapsed * 1.6 + petal.phase) * 6;
-          petal.vy = petal.vy * 0.94 + 14;
+          // Lửng lơ, đảo qua lại: bám dần về một vận tốc đích.
+          const swayTo = Math.sin(elapsed * 1.6 + petal.phase) * DRIFT_SWAY;
+          petal.vx += (swayTo - petal.vx) * driftCatch;
+          petal.vy += (DRIFT_FALL - petal.vy) * driftCatch;
         } else {
           // Trôi đi: rơi xuống và tản ra hai bên.
-          petal.vy += 34 * dt * 60 * dt;
-          petal.vx += Math.sin(elapsed * 2 + petal.phase) * 1.6;
-          petal.vx *= 0.995;
+          petal.vy += TAIL_GRAVITY * dt;
+          petal.vx += Math.sin(elapsed * 2 + petal.phase) * TAIL_SWAY * dt;
+          petal.vx *= tailKeep;
         }
 
         petal.x += petal.vx * dt;
@@ -157,6 +206,8 @@ export function PetalStorm({
 
       if (elapsed < FADE_FROM + FADE_OVER) {
         raf = requestAnimationFrame(frame);
+      } else {
+        setRunning(false);
       }
     };
 
@@ -164,18 +215,23 @@ export function PetalStorm({
 
     return () => {
       cancelAnimationFrame(raf);
-      window.clearTimeout(fallback);
+      window.clearTimeout(fallbackDone);
+      window.clearTimeout(fallbackEnd);
       window.removeEventListener("resize", resize);
     };
-  }, [active]);
+  }, [running]);
 
-  if (!active) return null;
+  if (!running) return null;
 
   return (
     <canvas
       ref={canvasRef}
       aria-hidden
-      className="pointer-events-none fixed inset-0 z-40"
+      // Nằm TRÊN cả trình phát nhạc (z-50). Không phải để cho đẹp: trình phát
+      // có lớp làm mờ hậu cảnh, mà hậu cảnh là mọi thứ được vẽ dưới nó. Để
+      // canvas ở dưới thì Safari phải làm mờ lại vùng đó ở từng khung hình của
+      // màn mưa hoa — đúng thứ khiến iPhone khựng.
+      className="pointer-events-none fixed inset-0 z-[60]"
     />
   );
 }

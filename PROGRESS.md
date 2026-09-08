@@ -45,7 +45,7 @@ lib/
   {fonts,theme,auth,placeholder,bouquet,crop,text,cx}.ts
 ```
 
-## Mười bốn cái bẫy đã gặp, đừng dẫm lại
+## Hai mươi cái bẫy đã gặp, đừng dẫm lại
 
 1. **Không khai `--font-*` trong `@theme`.** Biến trong `@theme` nằm ở `:root` nên `var()` bị thay thế **ngay tại `:root`**; khối con đặt lại `--f-heading` sẽ vô tác dụng. Font phải khai bằng `@utility font-heading { font-family: var(--f-heading) }`.
 
@@ -76,6 +76,18 @@ lib/
 13. **Đã GỠ HẲN lớp cache nội dung giữa các request — đừng thêm lại.** `unstable_cache` gắn nhãn từng được thêm để đỡ một lượt gọi Blob, và nó đẻ ra bốn lỗi liên tiếp: lưu xong trang vẫn hiện nội dung cũ; thêm field mới vào schema là trang văng lỗi ngay sau deploy; phải bấm Lưu hai lần; icon đổi rồi mà trang vẫn vẽ bản cũ hơn một lần lưu. Trang chỉ có một người xem, vài chục mili giây không đáng đánh đổi lấy chuyện hiển thị sai. Nay đọc thẳng Blob mỗi request, kèm `?v=${Date.now()}` để CDN của Blob không có gì để trả về bản cũ (từng dùng `uploadedAt` từ `list()`, nhưng ngay sau khi ghi thì `list()` có lúc còn trả mốc cũ). `cache()` của React vẫn gộp trong cùng một request.
 
 14. **Ảnh mờ là do ba chỗ cộng lại, sửa một chỗ không đủ.** (a) `sizes` khai nhỏ hơn bề ngang thật — dải phim khai 96px mà vẽ ra 111px, trình duyệt tải bản 96 rồi kéo giãn. (b) Cạnh dài nhất lúc cắt cào bằng 1600 cho mọi vị trí, trong khi ảnh nền trải hết 1024px CSS nên màn Retina cần ~2048 — nay mỗi vị trí một mức riêng trong `SLOT_MAX_EDGE`. (c) `next/image` nén lần hai ở mức mặc định 75, chồng lên lần nén WebP lúc cắt; nay dùng 90 (Next 16 bắt phải khai trong `images.qualities`). Cách kiểm: mở trang rồi so `getBoundingClientRect().width` với tham số `w=` trong `currentSrc` — tỉ lệ phải ≥ 2 để đủ cho màn Retina.
+
+15. **Hoạt ảnh vẽ tay phải tính theo GIÂY, không theo khung hình.** `PetalStorm` từng nhân vận tốc với một hằng số cố định ở mỗi khung hình (`vx *= 0.985`) và dùng `dt` cứng bằng `1/60`. Trên MacBook 60 Hz thì đúng; trên iPhone 15 Pro Max — màn 120 Hz — Safari gọi gấp đôi số khung hình, nên cánh hoa bị hãm nhanh gấp đôi và chỉ đi được nửa quãng đường trong cùng khoảng thời gian. Nhìn ra **y hệt máy bị giật, dù máy không rớt lấy một khung hình nào**. Nay `dt` lấy từ `now - last` (chặn trên 50 ms), còn mọi hệ số hãm đổi sang "còn lại bao nhiêu sau một giây" rồi `Math.pow(hệ_số, dt)`. Dấu hiệu nhận ra bệnh này: cuộn trang vẫn mượt mà riêng hoạt ảnh thì ì — cuộn do luồng ghép ảnh lo, nên cuộn mượt tức là máy còn khoẻ, lỗi nằm trong phép tính từng khung hình.
+
+16. **`backdrop-filter` bắt Safari lọc lại nền mỗi khi thứ nằm dưới nó đổi.** Trình phát nhạc `fixed z-50` có `backdrop-blur-md` và nằm đè lên mọi trang; màn mưa hoa vẽ ở `z-40`, tức là nằm trong "hậu cảnh" của trình phát — mỗi khung hình của canvas là một lần Safari phải làm mờ lại vùng đó. Sửa hai đường: canvas lên `z-[60]` (trên trình phát, và trông cũng hợp lý hơn vì hoa phủ kín màn), còn `backdrop-blur` chỉ bật từ `sm:` trở lên, dưới đó dùng nền đục hơn (`bg-deep/90`) cho gần như y hệt mà không tốn gì.
+
+17. **Đừng phóng to một phần tử đang có `filter: blur()`.** Quầng sáng ở màn kết là khối 320px kèm `blur-3xl` (64px) lại vừa chạy `scale` 1,6 giây — Safari phải dựng lại toàn bộ vết mờ ở từng khung hình, một trong những việc nặng nhất trên iOS. Đưa độ mềm vào thẳng các mốc màu của `radial-gradient` là hết bộ lọc mà nhìn không khác.
+
+18. **Đừng chạy hoạt ảnh trên `left` / `top` / `width` / `height`.** Vệt sáng quét ngang nút "the REAL flower" từng chạy `animate={{ left: [...] }}`, lặp vô hạn suốt lúc màn hoa đang mở — mỗi khung hình là một lần tính lại bố cục. Đổi sang `x` (phép biến hình, card đồ hoạ lo trọn); muốn phần trăm tính theo bề ngang của nút thì bọc trong một khối `absolute inset-0 overflow-hidden` rồi cho vệt sáng rộng `w-full` và chạy `x: ["-100%", "100%"]`. Kèm theo là cái bẫy `transform` quen thuộc: `motion` ghi thẳng `transform` khi chạy `x`, ghi đè luôn class `skew-x-*` của Tailwind — độ nghiêng phải giao cho motion qua `style={{ skewX: -20 }}`.
+
+19. **Đừng để một hoạt cảnh tự hủy ngay lúc nó gọi `onDone`.** `PetalStorm` từng nhận `active={phase === "storm"}`; gọi `onDone` là khối cha đổi cảnh, `active` thành false, canvas bị gỡ ngay — nên đoạn nhạt dần 1,8 giây không bao giờ chạy và cánh hoa biến mất phựt một cái. Nay component tự giữ vòng đời bằng state `running` của chính nó, `active` chỉ dùng để khởi động. Đổi lại phải có lưới an toàn riêng để dọn (`fallbackEnd`), vì khi tab bị ẩn thì `requestAnimationFrame` đứng hẳn và vòng lặp không bao giờ tự kết thúc.
+
+20. **Đừng để hai canvas phủ kín màn hình cùng tô một lượt.** Mưa hoa còn nhạt dần gần hai giây sau khi màn kết hiện ra, mà màn kết lại thả tiếp lớp cánh hoa trôi — đúng lúc nặng nhất thì có hai lớp toàn màn hình cùng chạy. Lớp trôi nay chờ 1,8 giây rồi mới gắn vào. Trên điện thoại cả hai lớp cũng hạ tỉ lệ điểm ảnh xuống 1,5 thay vì 2 (cánh hoa vốn mềm và mờ, mắt không nhận ra, mà số điểm ảnh phải tô chỉ còn hơn một nửa).
 
 Ngoài ra: `placehold.co` mặc định trả SVG mà bộ tối ưu ảnh của Next chặn SVG — URL ảnh giữ chỗ phải có đuôi `.png`.
 

@@ -63,7 +63,12 @@ export function MiniPlayer() {
         <motion.div
           layout
           transition={{ type: "spring", stiffness: 380, damping: 34 }}
-          className="border-gold/25 bg-deep/70 text-cream flex items-center gap-1 overflow-hidden rounded-full border px-1 py-1 shadow-lg shadow-black/30 backdrop-blur-md"
+          // Làm mờ hậu cảnh chỉ bật từ màn hình vừa trở lên. Trên iPhone,
+          // backdrop-filter buộc Safari lọc lại vùng sau trình phát mỗi lần
+          // thứ nằm dưới nó thay đổi — mà trình phát thì nằm đè lên mọi trang,
+          // kể cả lúc cánh hoa đang bay kín màn hình. Nền đục hơn một chút
+          // cho kết quả gần như y hệt mà không tốn gì.
+          className="border-gold/25 bg-deep/90 text-cream sm:bg-deep/70 flex items-center gap-1 overflow-hidden rounded-full border px-1 py-1 shadow-lg shadow-black/30 sm:backdrop-blur-md"
         >
           <AnimatePresence initial={false}>
             {open ? (
@@ -172,7 +177,7 @@ export function MiniPlayer() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.97 }}
               transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-              className="border-gold/25 bg-deep/85 max-h-64 w-56 origin-top-right overflow-y-auto rounded-2xl border p-1.5 shadow-xl shadow-black/40 backdrop-blur-md"
+              className="border-gold/25 bg-deep/95 sm:bg-deep/85 max-h-64 w-56 origin-top-right overflow-y-auto rounded-2xl border p-1.5 shadow-xl shadow-black/40 sm:backdrop-blur-md"
             >
               {audio.tracks.map((track, i) => (
                 <li key={track.id}>

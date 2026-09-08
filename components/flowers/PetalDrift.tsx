@@ -43,9 +43,14 @@ export function PetalDrift() {
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     let width = window.innerWidth;
     let height = window.innerHeight;
+    // Như màn mưa hoa: trên điện thoại tô ở 1,5x là đủ. Lớp này chạy mãi suốt
+    // màn kết nên mỗi điểm ảnh tiết kiệm được đều là pin tiết kiệm được.
+    const dpr = Math.min(
+      window.devicePixelRatio || 1,
+      window.innerWidth < 640 ? 1.5 : 2,
+    );
 
     const resize = () => {
       width = window.innerWidth;
