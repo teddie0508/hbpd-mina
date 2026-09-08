@@ -61,6 +61,7 @@ export function Polaroid({
           fill
           sizes={sizes}
           priority={priority}
+          quality={90}
           className="object-cover"
         />
       </div>

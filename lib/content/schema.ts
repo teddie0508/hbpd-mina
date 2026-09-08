@@ -224,3 +224,22 @@ export const SLOT_ASPECT = {
 } as const satisfies Record<string, AspectRatio>;
 
 export type ImageSlot = keyof typeof SLOT_ASPECT;
+
+/**
+ * Cạnh dài nhất khi lưu ảnh, riêng cho từng vị trí.
+ *
+ * Cắt theo chỗ sẽ dùng chứ không cào bằng: ảnh nền trải rộng cả khối nên cần
+ * nhiều điểm ảnh hơn hẳn, còn icon thì to cũng chẳng để làm gì. Con số đặt
+ * bằng bề ngang lớn nhất mà ảnh được vẽ ra, nhân đôi cho màn Retina.
+ */
+export const SLOT_MAX_EDGE: Record<ImageSlot, number> = {
+  // Trải hết bề ngang khối (tối đa 1024) → cần khoảng 2048 trên màn Retina.
+  boardBackground: 2560,
+  // Polaroid rộng nhất khoảng 272 → 544 là đủ, để dư cho thoải mái.
+  messagePhoto: 1400,
+  finalePolaroid: 1400,
+  // Ảnh vuông nhỏ trong khối và trên dải phim.
+  boardPhoto: 900,
+  filmstrip: 600,
+  hubIcon: 512,
+};

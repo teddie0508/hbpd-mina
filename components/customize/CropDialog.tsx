@@ -13,11 +13,14 @@ import { cropToBlob } from "@/lib/crop";
 export function CropDialog({
   file,
   aspect,
+  maxLongEdge,
   onCancel,
   onDone,
 }: {
   file: File;
   aspect: AspectRatio;
+  /** Cạnh dài nhất của ảnh kết quả, lấy theo vị trí sẽ dùng. */
+  maxLongEdge: number;
   onCancel: () => void;
   onDone: (blob: Blob) => void;
 }) {
@@ -52,7 +55,7 @@ export function CropDialog({
     setBusy(true);
     setError(null);
     try {
-      onDone(await cropToBlob(src, areaRef.current));
+      onDone(await cropToBlob(src, areaRef.current, maxLongEdge));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không cắt được ảnh");
       setBusy(false);

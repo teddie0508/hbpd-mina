@@ -6,8 +6,8 @@ export interface CropArea {
   height: number;
 }
 
-/** Cạnh dài nhất của ảnh sau khi cắt. Đủ nét cho màn Retina mà không nặng file. */
-const MAX_LONG_EDGE = 1600;
+/** Dùng khi bên gọi không nói rõ. Từng vị trí có mức riêng trong SLOT_MAX_EDGE. */
+const DEFAULT_LONG_EDGE = 1600;
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -26,6 +26,8 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 export async function cropToBlob(
   imageSrc: string,
   area: CropArea,
+  /** Cạnh dài nhất của ảnh kết quả; lấy theo vị trí sẽ dùng. */
+  maxLongEdge = DEFAULT_LONG_EDGE,
   /**
    * WebP chứ KHÔNG phải JPEG.
    * JPEG không có kênh alpha, nên icon nền trong suốt sẽ bị ép phẳng lên nền
@@ -41,7 +43,7 @@ export async function cropToBlob(
   const image = await loadImage(imageSrc);
 
   // Thu nhỏ nếu vùng cắt lớn hơn mức cần thiết, giữ nguyên tỉ lệ.
-  const scale = Math.min(1, MAX_LONG_EDGE / Math.max(area.width, area.height));
+  const scale = Math.min(1, maxLongEdge / Math.max(area.width, area.height));
   const width = Math.max(1, Math.round(area.width * scale));
   const height = Math.max(1, Math.round(area.height * scale));
 

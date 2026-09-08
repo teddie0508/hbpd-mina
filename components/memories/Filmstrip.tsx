@@ -36,7 +36,8 @@ export function Filmstrip({ photos }: { photos: ImageAsset[] }) {
               src={photo.url}
               alt={photo.alt}
               fill
-              sizes="96px"
+              sizes="128px"
+              quality={90}
               className="object-cover"
               priority={i === 0}
             />

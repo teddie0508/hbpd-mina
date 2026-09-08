@@ -52,6 +52,7 @@ export function MemoryBoard({ board }: { board: Board }) {
             alt=""
             fill
             sizes="(max-width: 768px) 100vw, 1100px"
+            quality={90}
             className="object-cover"
             aria-hidden
           />
@@ -135,7 +136,8 @@ export function MemoryBoard({ board }: { board: Board }) {
                       src={photo.url}
                       alt={photo.alt}
                       fill
-                      sizes="(max-width: 768px) 44vw, 180px"
+                      sizes="(max-width: 768px) 44vw, 200px"
+                      quality={90}
                       className="object-cover"
                     />
                   </div>

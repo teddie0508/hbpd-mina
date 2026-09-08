@@ -45,7 +45,7 @@ lib/
   {fonts,theme,auth,placeholder,bouquet,crop,text,cx}.ts
 ```
 
-## Mười ba cái bẫy đã gặp, đừng dẫm lại
+## Mười bốn cái bẫy đã gặp, đừng dẫm lại
 
 1. **Không khai `--font-*` trong `@theme`.** Biến trong `@theme` nằm ở `:root` nên `var()` bị thay thế **ngay tại `:root`**; khối con đặt lại `--f-heading` sẽ vô tác dụng. Font phải khai bằng `@utility font-heading { font-family: var(--f-heading) }`.
 
@@ -74,6 +74,8 @@ lib/
 12. **Đừng để cờ "chưa lưu" phụ thuộc vào lần đọc lại từ máy chủ.** Cờ này từng so bản nháp với bản đọc lại; lần đọc đó trễ một nhịp là nút vẫn báo "Lưu thay đổi" và phải bấm lần hai. Nay so với chính bản mà lệnh ghi trả về.
 
 13. **Đã GỠ HẲN lớp cache nội dung giữa các request — đừng thêm lại.** `unstable_cache` gắn nhãn từng được thêm để đỡ một lượt gọi Blob, và nó đẻ ra bốn lỗi liên tiếp: lưu xong trang vẫn hiện nội dung cũ; thêm field mới vào schema là trang văng lỗi ngay sau deploy; phải bấm Lưu hai lần; icon đổi rồi mà trang vẫn vẽ bản cũ hơn một lần lưu. Trang chỉ có một người xem, vài chục mili giây không đáng đánh đổi lấy chuyện hiển thị sai. Nay đọc thẳng Blob mỗi request, kèm `?v=${Date.now()}` để CDN của Blob không có gì để trả về bản cũ (từng dùng `uploadedAt` từ `list()`, nhưng ngay sau khi ghi thì `list()` có lúc còn trả mốc cũ). `cache()` của React vẫn gộp trong cùng một request.
+
+14. **Ảnh mờ là do ba chỗ cộng lại, sửa một chỗ không đủ.** (a) `sizes` khai nhỏ hơn bề ngang thật — dải phim khai 96px mà vẽ ra 111px, trình duyệt tải bản 96 rồi kéo giãn. (b) Cạnh dài nhất lúc cắt cào bằng 1600 cho mọi vị trí, trong khi ảnh nền trải hết 1024px CSS nên màn Retina cần ~2048 — nay mỗi vị trí một mức riêng trong `SLOT_MAX_EDGE`. (c) `next/image` nén lần hai ở mức mặc định 75, chồng lên lần nén WebP lúc cắt; nay dùng 90 (Next 16 bắt phải khai trong `images.qualities`). Cách kiểm: mở trang rồi so `getBoundingClientRect().width` với tham số `w=` trong `currentSrc` — tỉ lệ phải ≥ 2 để đủ cho màn Retina.
 
 Ngoài ra: `placehold.co` mặc định trả SVG mà bộ tối ưu ảnh của Next chặn SVG — URL ảnh giữ chỗ phải có đuôi `.png`.
 

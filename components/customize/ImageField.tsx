@@ -5,6 +5,7 @@ import { useId, useRef, useState } from "react";
 import {
   ASPECT_CSS,
   SLOT_ASPECT,
+  SLOT_MAX_EDGE,
   type ImageAsset,
   type ImageSlot,
 } from "@/lib/content/schema";
@@ -149,6 +150,7 @@ export function ImageField({
         <CropDialog
           file={pending}
           aspect={aspect}
+          maxLongEdge={SLOT_MAX_EDGE[slot]}
           onCancel={() => setPending(null)}
           onDone={handleCropped}
         />
