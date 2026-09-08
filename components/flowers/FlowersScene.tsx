@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Ambience } from "@/components/ui/Ambience";
 import { BackLink } from "@/components/ui/BackLink";
@@ -17,24 +17,14 @@ import { PetalStorm } from "./PetalStorm";
 /** Seed cố định cho lần dựng đầu, để máy chủ và trình duyệt ra cùng một bó. */
 const FIRST_SEED = 20261102;
 
-/** Sau ngần này giây mà chưa ai để ý thì dòng chữ bí mật sáng lên một chút. */
-const HINT_AFTER_MS = 30_000;
-
 type Phase = "bouquet" | "storm" | "finale";
 
 export function FlowersScene({ content }: { content: FlowersContent }) {
   const [seed, setSeed] = useState(FIRST_SEED);
   const [phase, setPhase] = useState<Phase>("bouquet");
-  const [hinting, setHinting] = useState(false);
 
   const bouquet = useMemo(() => generateBouquet(seed), [seed]);
   const paragraphs = toParagraphs(content.intro);
-
-  useEffect(() => {
-    if (phase !== "bouquet") return;
-    const id = window.setTimeout(() => setHinting(true), HINT_AFTER_MS);
-    return () => window.clearTimeout(id);
-  }, [phase]);
 
   return (
     <main
@@ -107,31 +97,49 @@ export function FlowersScene({ content }: { content: FlowersContent }) {
               {content.shuffleLabel}
             </button>
 
-            <div className="mt-14">
+            {/* Nút bí mật đứng giữa hai nút kia. Trước đây nó nấp ở góc màn
+                hình, mờ 16% — kín tới mức chính người làm ra cũng không thấy.
+                Giờ vẫn khác hẳn hai nút còn lại để gợi tò mò, nhưng không còn
+                phải đi tìm. */}
+            <motion.button
+              type="button"
+              onClick={() => setPhase("storm")}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 1.1 }}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+              className="group border-gold/60 bg-gold/10 text-gold hover:bg-gold/20 focus-visible:ring-gold/60 relative mt-4 inline-flex items-center gap-2.5 overflow-hidden rounded-full border px-6 py-3 text-[clamp(0.95rem,3.2vw,1.1rem)] tracking-wide italic shadow-[0_0_24px_-6px_var(--c-gold)] transition-colors outline-none focus-visible:ring-2"
+            >
+              {/* Vệt sáng quét ngang rất chậm, để mắt bắt được là có gì đó ở đây. */}
+              <motion.span
+                aria-hidden
+                className="pointer-events-none absolute inset-y-0 w-16 skew-x-[-20deg] bg-[linear-gradient(90deg,transparent,color-mix(in_srgb,var(--c-gold)_45%,transparent),transparent)]"
+                animate={{ left: ["-20%", "120%"] }}
+                transition={{
+                  duration: 2.6,
+                  repeat: Infinity,
+                  repeatDelay: 3.4,
+                  ease: "easeInOut",
+                }}
+              />
+              <svg
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="size-4 shrink-0"
+                aria-hidden
+              >
+                <path d="M12 2.6c1.3 3 4 5.7 7 7-3 1.3-5.7 4-7 7-1.3-3-4-5.7-7-7 3-1.3 5.7-4 7-7Z" />
+              </svg>
+              {content.secretLabel}
+            </motion.button>
+
+            <div className="mt-10">
               <BackLink />
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Dòng chữ bí mật: nấp ở góc, phải để ý mới thấy. */}
-      {phase === "bouquet" ? (
-        <motion.button
-          type="button"
-          onClick={() => setPhase("storm")}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: hinting ? [0.22, 0.55, 0.22] : 0.16 }}
-          transition={
-            hinting
-              ? { duration: 3.5, repeat: Infinity, ease: "easeInOut" }
-              : { duration: 2, delay: 1.5 }
-          }
-          whileHover={{ opacity: 1 }}
-          className="text-cream font-accent hover:text-gold fixed right-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 p-2 text-[calc(clamp(0.7rem,2.4vw,0.85rem)*var(--fz-accent,1))] tracking-wide italic transition-colors sm:right-5 sm:bottom-[max(1.25rem,env(safe-area-inset-bottom))]"
-        >
-          {content.secretLabel}
-        </motion.button>
-      ) : null}
 
       <PetalStorm
         active={phase === "storm"}

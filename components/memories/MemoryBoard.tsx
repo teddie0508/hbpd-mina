@@ -20,12 +20,25 @@ const SPOTS = [
   { x: 63, y: 45, w: 12, rot: -7 },
 ];
 
-/** Đường nét đứt nối vài tấm ảnh, gợi cảm giác một hành trình. */
+/**
+ * Đường bay nối các tấm ảnh, kiểu tuyến đường trên bản đồ.
+ *
+ * Toạ độ nằm trong khung 160×90 — đúng tỉ lệ 16:9 của khối — chứ không phải
+ * khung 100×100 kéo méo như trước. Khung vuông bị ép thành chữ nhật sẽ bóp
+ * luôn hình máy bay, còn khung đúng tỉ lệ thì mọi thứ giữ nguyên hình dáng.
+ */
 const TRAILS = [
-  "M 20 34 C 26 48, 34 52, 32 56",
-  "M 47 25 C 46 38, 48 56, 47 62",
-  "M 63 55 C 70 60, 76 58, 80 56",
+  // Tấm trên trái vòng xuống tấm giữa dưới, men theo mép trái cho thoáng.
+  "M 32 36 C 14 50, 30 76, 62 68",
+  // Tấm giữa dưới vòng lên tấm dưới phải.
+  "M 88 62 C 100 52, 109 46, 118 51",
+  // Hai tấm hàng trên nối nhau.
+  "M 88 15 C 99 7, 107 9, 110 18",
 ];
+
+/** Máy bay nhìn từ trên xuống, mũi hướng sang phải, dài khoảng 14 đơn vị. */
+const PLANE =
+  "M 7 0 L 1 1.1 L -1.4 4.2 L -2.8 4.2 L -1.9 1.5 L -4.7 1.9 L -5.9 3.2 L -6.6 3.2 L -6 1.3 L -7.5 0 L -6 -1.3 L -6.6 -3.2 L -5.9 -3.2 L -4.7 -1.9 L -1.9 -1.5 L -2.8 -4.2 L -1.4 -4.2 L 1 -1.1 Z";
 
 export function MemoryBoard({ board }: { board: Board }) {
   const photos = board.photos.slice(0, SPOTS.length);
@@ -68,33 +81,62 @@ export function MemoryBoard({ board }: { board: Board }) {
           }}
         />
 
-        {/* Nét đứt nối ảnh, chỉ hiện khi đã đủ rộng để rải ảnh. */}
+        {/* Đường bay nối ảnh, chỉ hiện khi đã đủ rộng để rải ảnh. */}
         <svg
           aria-hidden
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
+          viewBox="0 0 160 90"
           className="pointer-events-none absolute inset-0 z-10 hidden size-full md:block"
         >
-          {TRAILS.map((d, i) => (
-            <motion.path
-              key={i}
-              d={d}
-              fill="none"
-              stroke="color-mix(in srgb, var(--c-cream) 55%, transparent)"
-              strokeWidth="0.35"
-              strokeDasharray="1.4 1.6"
-              strokeLinecap="round"
-              vectorEffect="non-scaling-stroke"
-              initial={{ pathLength: 0, opacity: 0 }}
-              whileInView={{ pathLength: 1, opacity: 1 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{
-                duration: 1.4,
-                delay: 0.5 + i * 0.25,
-                ease: "easeInOut",
-              }}
-            />
-          ))}
+          {TRAILS.map((d, i) => {
+            const delay = 0.5 + i * 0.9;
+            return (
+              <g key={i}>
+                <motion.path
+                  d={d}
+                  fill="none"
+                  stroke="color-mix(in srgb, var(--c-cream) 72%, transparent)"
+                  // Độ dày tính theo đơn vị của viewBox chứ KHÔNG dùng
+                  // vectorEffect="non-scaling-stroke": với cờ đó, 0.55 là 0,55
+                  // pixel thật trên màn hình — mảnh tới mức gần như vô hình.
+                  strokeWidth="0.6"
+                  strokeDasharray="2.4 2.8"
+                  strokeLinecap="round"
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  whileInView={{ pathLength: 1, opacity: 1 }}
+                  viewport={{ once: true, amount: 0.3 }}
+                  transition={{ duration: 1.6, delay, ease: "easeInOut" }}
+                />
+
+                {/* Máy bay chạy dọc tuyến rồi đậu lại ở cuối.
+                    Dùng animateMotion của SVG: khai báo sẵn nên chạy được cả
+                    khi tab vừa mở, không phụ thuộc vòng lặp vẽ của JavaScript. */}
+                <motion.g
+                  fill="var(--c-cream)"
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 0.92 }}
+                  viewport={{ once: true, amount: 0.3 }}
+                  transition={{ duration: 0.4, delay: delay + 0.2 }}
+                >
+                  <g transform="scale(0.78)">
+                    <path d={PLANE} />
+                  </g>
+                  <animateMotion
+                    dur="1.6s"
+                    begin={`${delay + 0.2}s`}
+                    path={d}
+                    rotate="auto"
+                    fill="freeze"
+                    calcMode="spline"
+                    // Dừng ở khoảng hai phần ba tuyến, để máy bay đậu giữa
+                    // đường như trên bản đồ chứ không biến mất vào tấm ảnh.
+                    keyPoints="0;0.64"
+                    keyTimes="0;1"
+                    keySplines="0.4 0 0.2 1"
+                  />
+                </motion.g>
+              </g>
+            );
+          })}
         </svg>
 
         <div className="relative z-20 grid grid-cols-2 gap-3 p-4 sm:gap-4 sm:p-6 md:block md:aspect-[16/9] md:p-0">

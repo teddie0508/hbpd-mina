@@ -37,6 +37,8 @@ export function ImageField({
   const [pending, setPending] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Bề ngang thật của ảnh đang dùng, đọc được sau khi trình duyệt tải xong. */
+  const [naturalWidth, setNaturalWidth] = useState(0);
   const altId = useId();
   const uploadFile = useUploadFile();
 
@@ -60,6 +62,9 @@ export function ImageField({
   }
 
   const placeholder = isPlaceholder(value);
+  const recommended = SLOT_MAX_EDGE[slot];
+  // Dưới ba phần tư mức khuyến nghị thì mắt đã bắt đầu thấy mờ trên màn Retina.
+  const tooSmall = naturalWidth > 0 && naturalWidth < recommended * 0.75;
 
   return (
     <div className="space-y-2">
@@ -78,6 +83,7 @@ export function ImageField({
             src={value.url}
             alt={value.alt}
             className="size-full object-cover"
+            onLoad={(e) => setNaturalWidth(e.currentTarget.naturalWidth)}
           />
         ) : (
           <div className="text-mist/40 grid size-full place-items-center text-xs">
@@ -130,6 +136,15 @@ export function ImageField({
 
       {placeholder ? (
         <p className="text-[11px] text-amber-300/70">Đang là ảnh giữ chỗ</p>
+      ) : null}
+
+      {/* Khâu cắt không bao giờ phóng to ảnh, nên ảnh gốc nhỏ là chịu mờ.
+          Báo ngay ở đây, chứ để phát hiện lúc xem trang chính thì đã muộn. */}
+      {!placeholder && tooSmall ? (
+        <p className="text-[11px] leading-relaxed text-amber-300/80">
+          Ảnh này chỉ rộng {naturalWidth}px, nên có thể hơi mờ trên màn hình sắc
+          nét. Chỗ này nên dùng ảnh gốc rộng từ {recommended}px trở lên.
+        </p>
       ) : null}
       {error ? <p className="text-[11px] text-red-300">{error}</p> : null}
 

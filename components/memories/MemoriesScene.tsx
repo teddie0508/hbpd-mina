@@ -1,5 +1,7 @@
 "use client";
 
+import { motion } from "motion/react";
+
 import { Ambience } from "@/components/ui/Ambience";
 import { BackLink } from "@/components/ui/BackLink";
 import { Reveal } from "@/components/ui/Reveal";
@@ -32,18 +34,28 @@ export function MemoriesScene({ content }: { content: MemoriesContent }) {
           <Filmstrip photos={content.filmstrip} />
 
           <Reveal
-            from="left"
+            from="none"
             delay={0.15}
             className="paper relative z-0 w-full rounded-xl px-6 py-8 shadow-[0_18px_44px_-16px_rgba(0,0,0,0.7)] sm:px-10 sm:py-12 md:-ml-10 md:py-16 md:pl-16"
           >
             <div className="measure mx-auto space-y-6">
               {paragraphs.map((paragraph, i) => (
-                <p
+                // Đoạn lẻ trượt vào từ trái, đoạn chẵn từ phải, so le nhau.
+                // Quãng đường dài và tiết chậm để chữ trôi vào chứ không giật.
+                <motion.p
                   key={i}
+                  initial={{ opacity: 0, x: i % 2 === 0 ? -56 : 56 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true, amount: 0.3 }}
+                  transition={{
+                    duration: 1.1,
+                    delay: 0.35 + i * 0.22,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
                   className="font-body text-ink/85 text-center text-[calc(clamp(0.98rem,3.2vw,1.1rem)*var(--fz-body,1))] leading-[1.8] text-pretty"
                 >
                   {paragraph}
-                </p>
+                </motion.p>
               ))}
             </div>
           </Reveal>
