@@ -9,12 +9,17 @@ import { ASPECT_CSS, type ImageAsset } from "@/lib/content/schema";
 /**
  * Một tấm ảnh trên khối kỷ niệm.
  *
- * Chia làm ba lớp riêng biệt, cố ý không gộp:
+ * Chia làm bốn lớp riêng biệt, cố ý không gộp:
  *  - lớp ngoài cùng (do khối cha dựng) lo vị trí bằng class Tailwind
- *  - lớp này lo hiện dần, nghiêng theo con trỏ, và phóng khi rê chuột
+ *  - lớp hiện dần, có delay so le giữa các tấm
+ *  - lớp nghiêng theo con trỏ và phóng khi rê chuột, KHÔNG delay
  *  - lớp trong cùng lo lật mặt sau
- * Gộp lại là các phép biến đổi đè lên nhau: `motion` ghi thẳng `transform`
- * vào style, cái sau xoá sạch cái trước.
+ *
+ * Hai lý do phải tách:
+ *  - `motion` ghi thẳng `transform` vào style, gộp lại là cái sau xoá cái trước.
+ *  - `transition` áp cho MỌI chuyển động của cùng một phần tử. Gộp lớp hiện
+ *    dần với lớp hover thì cái delay so le lúc vào trang dính luôn vào hover:
+ *    rê chuột vào tấm cuối phải đợi hơn nửa giây nó mới chịu phóng.
  */
 export function BoardPhoto({
   photo,
@@ -42,85 +47,88 @@ export function BoardPhoto({
       className="gpu"
       style={{ perspective: 700 }}
       initial={{ opacity: 0, scale: 0.82, rotate }}
-      whileInView={{
-        opacity: 1,
-        scale: 1,
-        rotate,
-        // Nghiêng nhẹ theo con trỏ. Mỗi tấm lệch một chút theo độ nghiêng sẵn
-        // có của nó, để cả khối chuyển động không đều tăm tắp như một mảng.
-        rotateY: reduced ? 0 : tiltX * 7 + rotate * 0.2,
-        rotateX: reduced ? 0 : -tiltY * 7,
-      }}
+      whileInView={{ opacity: 1, scale: 1, rotate }}
       viewport={{ once: true, amount: 0.4 }}
-      transition={{
-        opacity: { duration: 0.6, delay, ease: [0.22, 1, 0.36, 1] },
-        scale: { duration: 0.6, delay, ease: [0.22, 1, 0.36, 1] },
-        rotate: { duration: 0.6, delay, ease: [0.22, 1, 0.36, 1] },
-        // Nghiêng theo con trỏ đi bằng lò xo cho mượt và luôn đuổi kịp.
-        rotateX: { type: "spring", stiffness: 120, damping: 20 },
-        rotateY: { type: "spring", stiffness: 120, damping: 20 },
-      }}
-      whileHover={{ scale: 1.09, zIndex: 30 }}
+      transition={{ duration: 0.6, delay, ease: [0.22, 1, 0.36, 1] }}
     >
       <motion.div
-        className="relative"
         style={{ transformStyle: "preserve-3d" }}
-        animate={{ rotateY: flipped ? 180 : 0 }}
-        transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
-        onClick={() => canFlip && setFlipped((f) => !f)}
-        role={canFlip ? "button" : undefined}
-        tabIndex={canFlip ? 0 : undefined}
-        aria-label={canFlip ? `Lật ảnh: ${photo.alt}` : undefined}
-        onKeyDown={(e) => {
-          if (!canFlip) return;
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            setFlipped((f) => !f);
-          }
+        // Nghiêng nhẹ theo con trỏ. Mỗi tấm lệch một chút theo độ nghiêng sẵn
+        // có của nó, để cả khối chuyển động không đều tăm tắp như một mảng.
+        animate={{
+          rotateY: reduced ? 0 : tiltX * 7 + rotate * 0.2,
+          rotateX: reduced ? 0 : -tiltY * 7,
+        }}
+        whileHover={{ scale: 1.09, zIndex: 30 }}
+        transition={{
+          // Nghiêng theo con trỏ đi bằng lò xo cho mượt và luôn đuổi kịp.
+          rotateX: { type: "spring", stiffness: 120, damping: 20 },
+          rotateY: { type: "spring", stiffness: 120, damping: 20 },
+          // Phóng khi rê chuột: nhanh và KHÔNG delay, để rê từ tấm này sang
+          // tấm kia là đổi ngay chứ không phải đợi tấm cũ thu về.
+          scale: { duration: 0.22, ease: [0.22, 1, 0.36, 1] },
         }}
       >
-        {/* Mặt trước */}
-        <div
-          className="bg-paper rounded-[2px] p-1.5 shadow-[0_8px_22px_-6px_rgba(0,0,0,0.6)] md:p-[6%]"
-          style={{ backfaceVisibility: "hidden" }}
+        <motion.div
+          className="relative"
+          style={{ transformStyle: "preserve-3d" }}
+          animate={{ rotateY: flipped ? 180 : 0 }}
+          transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+          onClick={() => canFlip && setFlipped((f) => !f)}
+          role={canFlip ? "button" : undefined}
+          tabIndex={canFlip ? 0 : undefined}
+          aria-label={canFlip ? `Lật ảnh: ${photo.alt}` : undefined}
+          onKeyDown={(e) => {
+            if (!canFlip) return;
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setFlipped((f) => !f);
+            }
+          }}
         >
+          {/* Mặt trước */}
           <div
-            className="relative w-full overflow-hidden"
-            style={{ aspectRatio: ASPECT_CSS[photo.aspect] }}
+            className="bg-paper rounded-[2px] p-1.5 shadow-[0_8px_22px_-6px_rgba(0,0,0,0.6)] md:p-[6%]"
+            style={{ backfaceVisibility: "hidden" }}
           >
-            <Image
-              src={photo.url}
-              alt={photo.alt}
-              fill
-              sizes="(max-width: 768px) 44vw, 200px"
-              quality={90}
-              className="object-cover"
-            />
+            <div
+              className="relative w-full overflow-hidden"
+              style={{ aspectRatio: ASPECT_CSS[photo.aspect] }}
+            >
+              <Image
+                src={photo.url}
+                alt={photo.alt}
+                fill
+                sizes="(max-width: 768px) 44vw, 200px"
+                quality={90}
+                className="object-cover"
+              />
+            </div>
+
+            {/* Góc gấp nhỏ, dấu hiệu duy nhất cho biết tấm này lật được. */}
+            {canFlip ? (
+              <span
+                aria-hidden
+                className="border-b-gold/70 absolute right-0 bottom-0 size-0 border-r-[14px] border-b-[14px] border-r-transparent"
+              />
+            ) : null}
           </div>
 
-          {/* Góc gấp nhỏ, dấu hiệu duy nhất cho biết tấm này lật được. */}
+          {/* Mặt sau: xoay sẵn 180° để khi lật xong nó quay đúng chiều. */}
           {canFlip ? (
-            <span
-              aria-hidden
-              className="border-b-gold/70 absolute right-0 bottom-0 size-0 border-r-[14px] border-b-[14px] border-r-transparent"
-            />
+            <div
+              className="paper absolute inset-0 grid place-items-center rounded-[2px] px-2 shadow-[0_8px_22px_-6px_rgba(0,0,0,0.6)]"
+              style={{
+                backfaceVisibility: "hidden",
+                transform: "rotateY(180deg)",
+              }}
+            >
+              <p className="font-accent text-ink/85 text-center text-[clamp(0.6rem,1.1vw,0.85rem)] leading-snug text-balance">
+                {note}
+              </p>
+            </div>
           ) : null}
-        </div>
-
-        {/* Mặt sau: xoay sẵn 180° để khi lật xong nó quay đúng chiều. */}
-        {canFlip ? (
-          <div
-            className="paper absolute inset-0 grid place-items-center rounded-[2px] px-2 shadow-[0_8px_22px_-6px_rgba(0,0,0,0.6)]"
-            style={{
-              backfaceVisibility: "hidden",
-              transform: "rotateY(180deg)",
-            }}
-          >
-            <p className="font-accent text-ink/85 text-center text-[clamp(0.6rem,1.1vw,0.85rem)] leading-snug text-balance">
-              {note}
-            </p>
-          </div>
-        ) : null}
+        </motion.div>
       </motion.div>
     </motion.div>
   );

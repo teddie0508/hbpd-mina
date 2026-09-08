@@ -28,6 +28,17 @@
 */
 /* Lỗ răng cưa của dải phim. Hai hướng riêng vì gradient không đổi chiều theo
    breakpoint được nếu viết inline. Khai bằng @utility nên dùng được md:sprockets-v. */
+/* Nét đứt của đường bay trôi chậm dọc tuyến, cho tuyến đường có sự sống.
+   Dịch đúng một chu kỳ nét (2.4 + 2.8) nên vòng lặp không thấy mối nối. */
+@keyframes trail-drift {
+  to {
+    stroke-dashoffset: -5.2;
+  }
+}
+@utility trail-drift {
+  animation: trail-drift 2.6s linear infinite;
+}
+
 @utility sprockets-h {
   background-image: repeating-linear-gradient(
     to right,

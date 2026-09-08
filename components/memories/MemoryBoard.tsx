@@ -119,20 +119,25 @@ export function MemoryBoard({ board }: { board: Board }) {
             const delay = 0.5 + i * 0.9;
             return (
               <g key={i}>
+                {/* KHÔNG dùng pathLength để vẽ dần: motion hiện thực nó bằng
+                    cách ghi đè chính stroke-dasharray, nên nét đứt bị xoá sạch
+                    và chỉ còn lại một đường liền. Thay bằng hiện dần rồi cho
+                    nét trôi chậm dọc tuyến. */}
                 <motion.path
+                  className="trail-drift"
                   d={d}
                   fill="none"
                   stroke="color-mix(in srgb, var(--c-cream) 72%, transparent)"
                   // Độ dày tính theo đơn vị của viewBox chứ KHÔNG dùng
-                  // vectorEffect="non-scaling-stroke": với cờ đó, 0.55 là 0,55
+                  // vectorEffect="non-scaling-stroke": với cờ đó, 0.6 là 0,6
                   // pixel thật trên màn hình — mảnh tới mức gần như vô hình.
                   strokeWidth="0.6"
                   strokeDasharray="2.4 2.8"
                   strokeLinecap="round"
-                  initial={{ pathLength: 0, opacity: 0 }}
-                  whileInView={{ pathLength: 1, opacity: 1 }}
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
                   viewport={{ once: true, amount: 0.3 }}
-                  transition={{ duration: 1.6, delay, ease: "easeInOut" }}
+                  transition={{ duration: 0.9, delay, ease: "easeOut" }}
                 />
 
                 {/* Máy bay chạy dọc tuyến rồi đậu lại ở cuối.
