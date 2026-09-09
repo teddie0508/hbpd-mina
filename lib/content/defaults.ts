@@ -157,6 +157,7 @@ export const DEFAULT_CONTENT: SiteContent = {
   // bày ra một ô giữ chỗ xám giữa màn hình.
   teddie: {
     enabled: true,
+    tapHint: "yêu thử click vào chú gấu đi :>",
     hub: {
       image: null,
       lines: ["Chọn đi em, cái nào cũng của em cả."],

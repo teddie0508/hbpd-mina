@@ -875,6 +875,18 @@ export function TeddiePanel({
       />
 
       {value.enabled ? (
+        <Field
+          label="Dòng nhắc chỉ vào gấu"
+          hint="Hiện kèm mũi tên sau khi gấu chào xong, và tắt hẳn ngay lần Mina chạm vào gấu đầu tiên — kể cả ở những trang sau. Để trống là tắt."
+        >
+          <TextInput
+            value={value.tapHint}
+            onChange={(tapHint) => onChange({ tapHint })}
+          />
+        </Field>
+      ) : null}
+
+      {value.enabled ? (
         <div className="space-y-4">
           <TeddieSpotFields
             label="Màn ba lựa chọn"

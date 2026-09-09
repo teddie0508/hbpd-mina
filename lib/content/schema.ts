@@ -233,6 +233,11 @@ export interface TeddieSpot {
 
 export interface TeddieContent {
   enabled: boolean;
+  /**
+   * Dòng nhắc kèm mũi tên chỉ vào gấu, để Mina biết là chạm được.
+   * Chỉ hiện tới lần chạm đầu tiên, rồi thôi hẳn cho cả phiên. Để trống là tắt.
+   */
+  tapHint: string;
   hub: TeddieSpot;
   message: TeddieSpot;
   memories: TeddieSpot;

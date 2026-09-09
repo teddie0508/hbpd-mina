@@ -13,6 +13,43 @@ const BUBBLE_MS = 6500;
 const HEART_DRIFT = [-16, 4, 20];
 
 /**
+ * Nhớ là đã chạm vào gấu chưa, dùng chung cho cả bốn trang.
+ *
+ * Phải nằm ở sessionStorage chứ không phải state: mỗi lần chuyển trang là
+ * component này dựng lại từ đầu, mà đã biết gấu chạm được rồi thì không cần
+ * ai nhắc lại ở ba trang còn lại nữa.
+ */
+const TAPPED_KEY = "mina.teddie.tapped";
+
+/**
+ * Nét vẽ tay uốn lượn, đi từ dòng chữ xuống trái vào chỗ gấu ngồi.
+ *
+ * Ngược hướng với mũi tên chỉ vào trình phát nhạc, nên toạ độ phải tính lại
+ * hẳn chứ không lật gương được: tiếp tuyến ở cuối là P3 − P2 = (8, 46) −
+ * (22, 40) = (−14, 6), tức chếch xuống bên trái chừng 157°, và hai vạch của
+ * đầu mũi tên bám theo đúng con số đó.
+ */
+function CurlyArrowToBear() {
+  return (
+    <svg
+      viewBox="0 0 48 64"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="note-nudge h-14 w-11 shrink-0"
+      // Nhích về phía con gấu, tức xuống bên trái.
+      style={{ "--nudge-x": "-4px", "--nudge-y": "2px" } as React.CSSProperties}
+      aria-hidden
+    >
+      <path d="M42 14 C 31 10, 24 20, 29 28 C 34 36, 22 40, 8 46" />
+      <path d="M12.6 39.4 L 8 46 L 15.9 47.2" />
+    </svg>
+  );
+}
+
+/**
  * Chú gấu Teddie ngồi ở góc dưới bên trái, đi theo Mina qua từng trang.
  *
  * Ảnh là ảnh tĩnh do bạn tải lên, còn cảm giác "sống" đến từ ba lớp chuyển
@@ -28,10 +65,18 @@ const HEART_DRIFT = [-16, 4, 20];
  * lên thì kéo dài ra, chạm đất lại bẹp một nhịp nhỏ. Chính chỗ méo hình đó
  * làm một tấm ảnh phẳng trông như có trọng lượng.
  */
-export function Teddie({ spot }: { spot: TeddieSpot }) {
+export function Teddie({
+  spot,
+  tapHint = "",
+}: {
+  spot: TeddieSpot;
+  /** Dòng nhắc kèm mũi tên, chỉ hiện tới lần chạm đầu tiên. */
+  tapHint?: string;
+}) {
   const hop = useAnimationControls();
   const [line, setLine] = useState(0);
   const [showBubble, setShowBubble] = useState(false);
+  const [showHint, setShowHint] = useState(false);
   /** Tăng mỗi lần chạm để mấy quả tim được dựng lại và bay lại từ đầu. */
   const [burst, setBurst] = useState(0);
   const hideTimer = useRef<number | null>(null);
@@ -55,6 +100,23 @@ export function Teddie({ spot }: { spot: TeddieSpot }) {
     return () => window.clearTimeout(id);
   }, [hasLines, openBubble]);
 
+  // Nhắc "chạm thử đi", nhưng chỉ khi chưa từng chạm lần nào.
+  //
+  // Đọc sessionStorage trong effect chứ không trong lúc dựng: máy chủ không có
+  // sessionStorage, đọc lúc dựng là HTML hai bên lệch nhau ngay.
+  useEffect(() => {
+    if (!tapHint.trim()) return;
+    try {
+      if (sessionStorage.getItem(TAPPED_KEY) === "1") return;
+    } catch {
+      // Chế độ riêng tư chặn sessionStorage — coi như chưa chạm, cùng lắm là
+      // nhắc lại một lần nữa.
+    }
+    // Chờ con gấu chào xong đã rồi mới chen vào.
+    const id = window.setTimeout(() => setShowHint(true), 2800);
+    return () => window.clearTimeout(id);
+  }, [tapHint]);
+
   useEffect(
     () => () => {
       if (hideTimer.current !== null) window.clearTimeout(hideTimer.current);
@@ -72,6 +134,15 @@ export function Teddie({ spot }: { spot: TeddieSpot }) {
       transition: { duration: 0.72, ease: [0.34, 1.2, 0.64, 1] },
     });
     setBurst((n) => n + 1);
+
+    // Đã biết gấu chạm được rồi thì thôi nhắc, ở cả những trang sau nữa.
+    setShowHint(false);
+    try {
+      sessionStorage.setItem(TAPPED_KEY, "1");
+    } catch {
+      /* bỏ qua */
+    }
+
     if (hasLines) {
       setLine((i) => (i + 1) % lines.length);
       openBubble();
@@ -106,60 +177,93 @@ export function Teddie({ spot }: { spot: TeddieSpot }) {
         ) : null}
       </AnimatePresence>
 
-      <motion.div
-        initial={{ opacity: 0, y: 26, scale: 0.86 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.75, delay: 0.9, ease: [0.34, 1.3, 0.64, 1] }}
-        className="pointer-events-auto relative"
-      >
-        {/* Tim bay lên mỗi lần được chạm. Key đổi theo lượt chạm nên chúng
+      {/* gap-2: đủ để đầu mũi tên dừng cách con gấu chừng 15px. Sát quá thì
+          nét vẽ dính vào ảnh, nhìn như bị lỗi chứ không như đang chỉ. */}
+      <div className="flex items-center gap-2">
+        <motion.div
+          initial={{ opacity: 0, y: 26, scale: 0.86 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{
+            duration: 0.75,
+            delay: 0.9,
+            ease: [0.34, 1.3, 0.64, 1],
+          }}
+          className="pointer-events-auto relative"
+        >
+          {/* Tim bay lên mỗi lần được chạm. Key đổi theo lượt chạm nên chúng
             được dựng lại và chạy lại từ đầu; ở đây không có ô nhập nào nên
             việc dựng lại là vô hại. */}
-        {burst > 0 ? (
-          <span
-            key={burst}
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-2 flex justify-center"
-          >
-            {HEART_DRIFT.map((drift, i) => (
-              <span
-                key={i}
-                className="teddie-heart text-gold absolute block"
-                style={
-                  {
-                    "--heart-x": `${drift}px`,
-                    animationDelay: `${i * 0.12}s`,
-                  } as React.CSSProperties
-                }
-              >
-                <svg viewBox="0 0 24 24" fill="currentColor" className="size-3">
-                  <path d="M12 21s-7.5-4.6-9.4-9A5.3 5.3 0 0 1 12 6.6 5.3 5.3 0 0 1 21.4 12c-1.9 4.4-9.4 9-9.4 9Z" />
-                </svg>
-              </span>
-            ))}
-          </span>
-        ) : null}
+          {burst > 0 ? (
+            <span
+              key={burst}
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 top-2 flex justify-center"
+            >
+              {HEART_DRIFT.map((drift, i) => (
+                <span
+                  key={i}
+                  className="teddie-heart text-gold absolute block"
+                  style={
+                    {
+                      "--heart-x": `${drift}px`,
+                      animationDelay: `${i * 0.12}s`,
+                    } as React.CSSProperties
+                  }
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    className="size-3"
+                  >
+                    <path d="M12 21s-7.5-4.6-9.4-9A5.3 5.3 0 0 1 12 6.6 5.3 5.3 0 0 1 21.4 12c-1.9 4.4-9.4 9-9.4 9Z" />
+                  </svg>
+                </span>
+              ))}
+            </span>
+          ) : null}
 
-        <span className="teddie-float block">
-          <motion.button
-            type="button"
-            animate={hop}
-            onClick={handleTap}
-            aria-label={hasLines ? lines[line] : "Teddie"}
-            className="focus-visible:ring-gold/60 block cursor-pointer rounded-full outline-none focus-visible:ring-2"
-          >
-            <Image
-              src={spot.image.url}
-              alt={spot.image.alt || "Teddie"}
-              width={256}
-              height={256}
-              sizes="(max-width: 640px) 96px, 128px"
-              quality={90}
-              className="size-24 object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,0.45)] sm:size-32"
-            />
-          </motion.button>
-        </span>
-      </motion.div>
+          <span className="teddie-float block">
+            <motion.button
+              type="button"
+              animate={hop}
+              onClick={handleTap}
+              aria-label={hasLines ? lines[line] : "Teddie"}
+              className="focus-visible:ring-gold/60 block cursor-pointer rounded-full outline-none focus-visible:ring-2"
+            >
+              <Image
+                src={spot.image.url}
+                alt={spot.image.alt || "Teddie"}
+                width={256}
+                height={256}
+                sizes="(max-width: 640px) 96px, 128px"
+                quality={90}
+                className="size-24 object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,0.45)] sm:size-32"
+              />
+            </motion.button>
+          </span>
+        </motion.div>
+
+        {/* Dòng nhắc chỉ vào gấu. Mũi tên đứng trước để nó nằm sát con gấu,
+            chữ đẩy ra ngoài. */}
+        <AnimatePresence>
+          {showHint && tapHint.trim() ? (
+            <motion.div
+              key="taphint"
+              aria-hidden
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -6 }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              className="text-gold/75 flex items-center gap-1"
+            >
+              <CurlyArrowToBear />
+              <p className="font-accent max-w-[9.5rem] text-[0.8rem] leading-snug text-balance sm:max-w-[12rem] sm:text-[0.9rem]">
+                {tapHint}
+              </p>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

@@ -18,7 +18,9 @@ export default async function HubPage() {
   return (
     <>
       <Hub content={content.hub} />
-      {content.teddie.enabled ? <Teddie spot={content.teddie.hub} /> : null}
+      {content.teddie.enabled ? (
+        <Teddie spot={content.teddie.hub} tapHint={content.teddie.tapHint} />
+      ) : null}
     </>
   );
 }

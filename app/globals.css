@@ -84,7 +84,9 @@
     transform: translate3d(0, 0, 0);
   }
   50% {
-    transform: translate3d(2px, -4px, 0);
+    /* Hướng nhích truyền vào từ ngoài, để mũi tên nào cũng nhích về phía thứ
+       nó đang chỉ chứ không phải nhích ngược. */
+    transform: translate3d(var(--nudge-x, 2px), var(--nudge-y, -4px), 0);
   }
 }
 @utility note-nudge {

@@ -18,7 +18,12 @@ export default async function FlowersPage() {
   return (
     <>
       <FlowersScene content={content.flowers} />
-      {content.teddie.enabled ? <Teddie spot={content.teddie.flowers} /> : null}
+      {content.teddie.enabled ? (
+        <Teddie
+          spot={content.teddie.flowers}
+          tapHint={content.teddie.tapHint}
+        />
+      ) : null}
     </>
   );
 }

@@ -19,7 +19,10 @@ export default async function MemoriesPage() {
     <>
       <MemoriesScene content={content.memories} />
       {content.teddie.enabled ? (
-        <Teddie spot={content.teddie.memories} />
+        <Teddie
+          spot={content.teddie.memories}
+          tapHint={content.teddie.tapHint}
+        />
       ) : null}
     </>
   );

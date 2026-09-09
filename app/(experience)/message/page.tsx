@@ -18,7 +18,12 @@ export default async function MessagePage() {
   return (
     <>
       <MessageScene content={content.message} />
-      {content.teddie.enabled ? <Teddie spot={content.teddie.message} /> : null}
+      {content.teddie.enabled ? (
+        <Teddie
+          spot={content.teddie.message}
+          tapHint={content.teddie.tapHint}
+        />
+      ) : null}
     </>
   );
 }
