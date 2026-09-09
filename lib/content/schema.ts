@@ -217,6 +217,28 @@ export interface FlowersContent {
   typography: TypeSet;
 }
 
+/**
+ * Chú gấu Teddie đi theo Mina qua từng trang.
+ *
+ * Ảnh do bạn tải lên (nền trong suốt), còn phần chuyển động nằm ở lớp bọc bên
+ * ngoài: trôi lên xuống, nghiêng qua lại, nảy khi chạm vào. Nhờ vậy ảnh tĩnh
+ * vẫn sống mà không cần ảnh động hay thư viện hoạt hình nào.
+ */
+export interface TeddieSpot {
+  /** null = trang này không có gấu. */
+  image: ImageAsset | null;
+  /** Chạm vào gấu là sang câu tiếp; hết thì quay lại câu đầu. */
+  lines: string[];
+}
+
+export interface TeddieContent {
+  enabled: boolean;
+  hub: TeddieSpot;
+  message: TeddieSpot;
+  memories: TeddieSpot;
+  flowers: TeddieSpot;
+}
+
 export interface MusicContent {
   /** Nhạc luôn cần một cú chạm để phát (trình duyệt chặn autoplay); cú chạm đó là lúc mở phong bì. */
   startOnEnvelopeOpen: boolean;
@@ -242,6 +264,7 @@ export interface SiteContent {
   memories: MemoriesContent;
   flowers: FlowersContent;
   music: MusicContent;
+  teddie: TeddieContent;
 }
 
 /**
@@ -278,6 +301,7 @@ export const SLOT_ASPECT = {
   boardPhoto: "1:1",
   boardBackground: "16:9",
   finalePolaroid: "4:5",
+  teddie: "1:1",
 } as const satisfies Record<string, AspectRatio>;
 
 export type ImageSlot = keyof typeof SLOT_ASPECT;
@@ -299,4 +323,6 @@ export const SLOT_MAX_EDGE: Record<ImageSlot, number> = {
   boardPhoto: 900,
   filmstrip: 600,
   hubIcon: 512,
+  // Gấu vẽ rộng nhất 128 CSS px -> 512 là đủ cho màn Retina, để dư một bậc.
+  teddie: 700,
 };

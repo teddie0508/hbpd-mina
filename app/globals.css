@@ -39,6 +39,42 @@
   animation: trail-drift 2.6s linear infinite;
 }
 
+/* Gấu Teddie thở: trôi lên xuống và nghiêng qua lại rất chậm.
+   Đây là thứ biến một tấm ảnh phẳng thành một nhân vật — mắt người đọc
+   chuyển động nhẹ là "còn sống", đứng yên tuyệt đối là "hình dán".
+   Vòng lặp vô hạn nên phải nằm ở CSS, không để trên luồng chính. */
+@keyframes teddie-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-1.6deg);
+  }
+  50% {
+    transform: translate3d(0, -7px, 0) rotate(1.6deg);
+  }
+}
+@utility teddie-float {
+  animation: teddie-float 3.6s ease-in-out infinite;
+}
+
+/* Tim bay lên khi chạm vào gấu. Hướng bay của từng quả truyền vào qua
+   --heart-x để chúng toè ra chứ không xếp hàng dọc. */
+@keyframes teddie-heart {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.5);
+  }
+  18% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--heart-x, 0px), -52px, 0) scale(1.05);
+  }
+}
+@utility teddie-heart {
+  animation: teddie-heart 1.5s ease-out forwards;
+}
+
 /* Mũi tên chỉ vào trình phát nhạc nhích lên nhích xuống cho đỡ chết cứng.
    Viết bằng CSS chứ không bằng motion: đây là vòng lặp vô hạn, để nó nằm
    trên luồng ghép ảnh thì luồng chính không phải đụng tới. */

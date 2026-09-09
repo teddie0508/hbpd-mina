@@ -1,6 +1,8 @@
 import { MessageScene } from "@/components/message/MessageScene";
 import { redirect } from "next/navigation";
 
+import { Teddie } from "@/components/teddie/Teddie";
+
 import { getContent } from "@/lib/content/store";
 import { isSealed } from "@/lib/gate";
 
@@ -13,5 +15,10 @@ export default async function MessagePage() {
   if (await isSealed()) redirect("/");
 
   const content = await getContent();
-  return <MessageScene content={content.message} />;
+  return (
+    <>
+      <MessageScene content={content.message} />
+      {content.teddie.enabled ? <Teddie spot={content.teddie.message} /> : null}
+    </>
+  );
 }

@@ -153,6 +153,31 @@ export const DEFAULT_CONTENT: SiteContent = {
     typography: baseType(),
   },
 
+  // Ảnh để null: trang nào chưa tải gấu lên thì không hiện gì cả, chứ không
+  // bày ra một ô giữ chỗ xám giữa màn hình.
+  teddie: {
+    enabled: true,
+    hub: {
+      image: null,
+      lines: ["Chọn đi em, cái nào cũng của em cả."],
+    },
+    message: {
+      image: null,
+      lines: ["Đoạn này anh viết lâu lắm đấy.", "Đọc chậm thôi nhé."],
+    },
+    memories: {
+      image: null,
+      // Câu này còn làm một việc nữa: không có ai chỉ thì chẳng ai biết ảnh
+      // lật được mặt sau.
+      lines: ["Bấm thử vào ảnh xem, mặt sau có chữ đấy."],
+    },
+    flowers: {
+      image: null,
+      // Tương tự, đây là chỗ duy nhất gợi ra nút "the REAL flower".
+      lines: ["Anh còn giấu một bó nữa cơ...", "Tìm kỹ đi, gần lắm."],
+    },
+  },
+
   music: {
     startOnEnvelopeOpen: true,
     volume: 0.55,

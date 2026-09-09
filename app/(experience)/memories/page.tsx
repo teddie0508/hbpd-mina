@@ -1,6 +1,8 @@
 import { MemoriesScene } from "@/components/memories/MemoriesScene";
 import { redirect } from "next/navigation";
 
+import { Teddie } from "@/components/teddie/Teddie";
+
 import { getContent } from "@/lib/content/store";
 import { isSealed } from "@/lib/gate";
 
@@ -13,5 +15,12 @@ export default async function MemoriesPage() {
   if (await isSealed()) redirect("/");
 
   const content = await getContent();
-  return <MemoriesScene content={content.memories} />;
+  return (
+    <>
+      <MemoriesScene content={content.memories} />
+      {content.teddie.enabled ? (
+        <Teddie spot={content.teddie.memories} />
+      ) : null}
+    </>
+  );
 }

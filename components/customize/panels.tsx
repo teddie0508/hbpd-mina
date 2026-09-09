@@ -15,6 +15,8 @@ import {
   type MessageContent,
   type MusicContent,
   type PassphraseContent,
+  type TeddieContent,
+  type TeddieSpot,
   type SiteContent,
   type ThemeColors,
   type Track,
@@ -810,5 +812,102 @@ export function MusicPanel({
         </button>
       </SectionCard>
     </div>
+  );
+}
+
+/** Một trang: ảnh gấu + các câu thoại. */
+function TeddieSpotFields({
+  label,
+  hint,
+  value,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  value: TeddieSpot;
+  onChange: (patch: Partial<TeddieSpot>) => void;
+}) {
+  return (
+    <div className="border-mist/15 grid gap-4 rounded-xl border border-dashed p-4 sm:grid-cols-[9rem_1fr]">
+      <ImageField
+        slot="teddie"
+        value={value.image}
+        label={label}
+        onChange={(image) => onChange({ image })}
+        onRemove={() => onChange({ image: null })}
+      />
+      <Field label={`Lời thoại — ${label}`} hint={hint}>
+        <TextArea
+          rows={3}
+          value={value.lines.join("\n")}
+          onChange={(text) =>
+            onChange({
+              lines: text
+                .split("\n")
+                .map((line) => line.trim())
+                .filter(Boolean),
+            })
+          }
+        />
+      </Field>
+    </div>
+  );
+}
+
+export function TeddiePanel({
+  value,
+  onChange,
+}: {
+  value: TeddieContent;
+  onChange: Patch<TeddieContent>;
+}) {
+  const hint = "Mỗi dòng một câu. Mina chạm vào gấu là sang câu tiếp theo.";
+
+  return (
+    <SectionCard
+      title="Gấu Teddie"
+      description="Ngồi ở góc dưới bên trái, đi theo Mina qua bốn trang trong. Ảnh nền trong suốt sẽ đẹp nhất; trang nào không tải ảnh thì trang đó không có gấu."
+    >
+      <Toggle
+        checked={value.enabled}
+        onChange={(enabled) => onChange({ enabled })}
+        label="Cho gấu xuất hiện"
+      />
+
+      {value.enabled ? (
+        <div className="space-y-4">
+          <TeddieSpotFields
+            label="Màn ba lựa chọn"
+            hint={hint}
+            value={value.hub}
+            onChange={(patch) => onChange({ hub: { ...value.hub, ...patch } })}
+          />
+          <TeddieSpotFields
+            label="Lời nhắn"
+            hint={hint}
+            value={value.message}
+            onChange={(patch) =>
+              onChange({ message: { ...value.message, ...patch } })
+            }
+          />
+          <TeddieSpotFields
+            label="Kỷ niệm"
+            hint="Đây là chỗ duy nhất gợi ý được rằng ảnh lật xem được mặt sau."
+            value={value.memories}
+            onChange={(patch) =>
+              onChange({ memories: { ...value.memories, ...patch } })
+            }
+          />
+          <TeddieSpotFields
+            label="Hoa"
+            hint="Đây là chỗ duy nhất gợi ý được nút the REAL flower."
+            value={value.flowers}
+            onChange={(patch) =>
+              onChange({ flowers: { ...value.flowers, ...patch } })
+            }
+          />
+        </div>
+      ) : null}
+    </SectionCard>
   );
 }

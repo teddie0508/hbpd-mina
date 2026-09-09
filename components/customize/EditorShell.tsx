@@ -21,6 +21,7 @@ import {
   MemoriesPanel,
   MessagePanel,
   MusicPanel,
+  TeddiePanel,
 } from "./panels";
 
 const TABS = [
@@ -31,6 +32,7 @@ const TABS = [
   { key: "memories", label: "Kỷ niệm" },
   { key: "flowers", label: "Hoa" },
   { key: "music", label: "Nhạc" },
+  { key: "teddie", label: "Gấu" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -270,6 +272,12 @@ export function EditorShell({
             <MusicPanel
               value={draft.music}
               onChange={(p) => patch({ music: { ...draft.music, ...p } })}
+            />
+          ) : null}
+          {tab === "teddie" ? (
+            <TeddiePanel
+              value={draft.teddie}
+              onChange={(p) => patch({ teddie: { ...draft.teddie, ...p } })}
             />
           ) : null}
         </main>

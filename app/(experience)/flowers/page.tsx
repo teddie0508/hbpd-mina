@@ -1,6 +1,8 @@
 import { FlowersScene } from "@/components/flowers/FlowersScene";
 import { redirect } from "next/navigation";
 
+import { Teddie } from "@/components/teddie/Teddie";
+
 import { getContent } from "@/lib/content/store";
 import { isSealed } from "@/lib/gate";
 
@@ -13,5 +15,10 @@ export default async function FlowersPage() {
   if (await isSealed()) redirect("/");
 
   const content = await getContent();
-  return <FlowersScene content={content.flowers} />;
+  return (
+    <>
+      <FlowersScene content={content.flowers} />
+      {content.teddie.enabled ? <Teddie spot={content.teddie.flowers} /> : null}
+    </>
+  );
 }
