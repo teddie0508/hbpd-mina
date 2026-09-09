@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 
 import { ContentProvider } from "@/components/providers/ContentProvider";
+import { forClient } from "@/lib/content/schema";
 import { getContent } from "@/lib/content/store";
 import { googleFontsHref } from "@/lib/fonts";
 import { themeVars, usedFontKeys } from "@/lib/theme";
@@ -46,7 +47,9 @@ export default async function RootLayout({
         ) : null}
       </head>
       <body className="antialiased">
-        <ContentProvider value={content}>{children}</ContentProvider>
+        {/* forClient(): nội dung đưa vào provider nằm nguyên trong HTML gửi
+            xuống, nên phải cắt đáp án của lớp hỏi tên trước. */}
+        <ContentProvider value={forClient(content)}>{children}</ContentProvider>
       </body>
     </html>
   );

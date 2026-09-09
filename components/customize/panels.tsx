@@ -14,6 +14,7 @@ import {
   type MemoryBoard,
   type MessageContent,
   type MusicContent,
+  type PassphraseContent,
   type SiteContent,
   type ThemeColors,
   type Track,
@@ -195,6 +196,14 @@ export function LandingPanel({
           onChange={(subline) => onChange({ subline })}
         />
       </Field>
+
+      <PassphraseFields
+        value={value.passphrase}
+        onChange={(patch) =>
+          onChange({ passphrase: { ...value.passphrase, ...patch } })
+        }
+      />
+
       <TypographyPicker
         fonts={value.fonts}
         type={value.typography}
@@ -203,6 +212,88 @@ export function LandingPanel({
         sampleText={value.headline || SAMPLE}
       />
     </SectionCard>
+  );
+}
+
+/**
+ * Lớp hỏi tên sau khi chạm phong bì.
+ *
+ * Danh sách đáp án gõ mỗi dòng một cái. Không cần lo hoa/thường hay dấu:
+ * lúc so, cả đáp án lẫn câu trả lời đều được đưa về cùng một dạng.
+ */
+function PassphraseFields({
+  value,
+  onChange,
+}: {
+  value: PassphraseContent;
+  onChange: (patch: Partial<PassphraseContent>) => void;
+}) {
+  return (
+    <div className="border-mist/15 space-y-4 rounded-xl border border-dashed p-4">
+      <Toggle
+        checked={value.enabled}
+        onChange={(enabled) => onChange({ enabled })}
+        label="Hỏi tên trước khi mở thư"
+      />
+
+      {value.enabled ? (
+        <>
+          <Field label="Tiêu đề panel">
+            <TextInput
+              value={value.title}
+              onChange={(title) => onChange({ title })}
+            />
+          </Field>
+
+          <Field label="Dòng gợi ý">
+            <TextInput
+              value={value.hint}
+              onChange={(hint) => onChange({ hint })}
+            />
+          </Field>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Chữ mờ trong ô nhập">
+              <TextInput
+                value={value.placeholder}
+                onChange={(placeholder) => onChange({ placeholder })}
+              />
+            </Field>
+            <Field label="Chữ trên nút">
+              <TextInput
+                value={value.submitLabel}
+                onChange={(submitLabel) => onChange({ submitLabel })}
+              />
+            </Field>
+          </div>
+
+          <Field label="Câu báo khi trả lời sai">
+            <TextInput
+              value={value.errorText}
+              onChange={(errorText) => onChange({ errorText })}
+            />
+          </Field>
+
+          <Field
+            label="Các đáp án được chấp nhận"
+            hint="Mỗi dòng một đáp án. Gõ hoa hay thường, có dấu hay không dấu đều qua. Danh sách này không bao giờ gửi xuống trình duyệt."
+          >
+            <TextArea
+              rows={5}
+              value={value.answers.join("\n")}
+              onChange={(text) =>
+                onChange({
+                  answers: text
+                    .split("\n")
+                    .map((line) => line.trim())
+                    .filter(Boolean),
+                })
+              }
+            />
+          </Field>
+        </>
+      ) : null}
+    </div>
   );
 }
 

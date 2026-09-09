@@ -12,20 +12,26 @@ import { fontVars } from "@/lib/theme";
 
 import { Countdown } from "./Countdown";
 import { Envelope } from "./Envelope";
+import { NameGate } from "./NameGate";
 
 export function Landing({
   content,
   lockedOnServer,
+  askNameOnServer,
 }: {
   content: SiteContent;
   /** Máy chủ đã tính sẵn còn khoá hay không, để lần dựng đầu không bị nhấp nháy. */
   lockedOnServer: boolean;
+  /** Chạm phong bì xong còn phải hỏi tên nữa không. */
+  askNameOnServer: boolean;
 }) {
   const router = useRouter();
   const audio = useAudio();
   const reduced = useReducedMotion();
   const [locked, setLocked] = useState(lockedOnServer);
   const [opening, setOpening] = useState(false);
+  const [needName, setNeedName] = useState(askNameOnServer);
+  const [asking, setAsking] = useState(false);
 
   const unlock = useCallback(() => setLocked(false), []);
 
@@ -35,11 +41,29 @@ export function Landing({
     router.prefetch("/hub");
   }, [router]);
 
-  const handleOpen = useCallback(() => {
-    // Phải gọi ngay trong cú chạm, đây là lần duy nhất iOS cho phép bật nhạc.
+  const handleRequestOpen = useCallback(() => {
+    // Nhạc phải bật NGAY ở đây, kể cả khi còn phải hỏi tên.
+    //
+    // iOS chỉ cho phát tiếng từ bên trong một cử chỉ thật của người dùng, mà
+    // "bên trong" tính rất chặt: bấm nút trong panel rồi đợi máy chủ trả lời
+    // là đã qua một lượt await, cử chỉ hết hiệu lực và nhạc sẽ câm. Nên cứ
+    // bật từ cú chạm phong bì — nhạc chạy nền trong lúc cô ấy gõ tên cũng
+    // hợp cảnh.
     if (content.music.startOnEnvelopeOpen) audio.start();
+
+    if (needName) {
+      setAsking(true);
+      return;
+    }
     setOpening(true);
-  }, [audio, content.music.startOnEnvelopeOpen]);
+  }, [audio, content.music.startOnEnvelopeOpen, needName]);
+
+  // Trả lời đúng: đóng panel rồi mở phong bì luôn, không bắt chạm lại lần nữa.
+  const handlePassed = useCallback(() => {
+    setNeedName(false);
+    setAsking(false);
+    setOpening(true);
+  }, []);
 
   const handleFinished = useCallback(() => router.push("/hub"), [router]);
 
@@ -74,7 +98,8 @@ export function Landing({
 
               <Envelope
                 monogram={content.recipientName.slice(0, 1).toUpperCase()}
-                onOpen={handleOpen}
+                opened={opening}
+                onRequestOpen={handleRequestOpen}
                 onFinished={handleFinished}
               />
 
@@ -93,6 +118,13 @@ export function Landing({
           )}
         </AnimatePresence>
       </div>
+
+      <NameGate
+        config={content.landing.passphrase}
+        open={asking}
+        onPassed={handlePassed}
+        onDismiss={() => setAsking(false)}
+      />
 
       {/* Portal ra <body>: đặt trong phong bì thì bị perspective giam lại,
           chỉ phủ đúng khung phong bì thay vì cả màn hình. */}

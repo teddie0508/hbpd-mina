@@ -60,6 +60,16 @@ export const DEFAULT_CONTENT: SiteContent = {
   landing: {
     headline: "Happy Birthday, Mina",
     subline: "chạm vào phong bì nhé...",
+    passphrase: {
+      enabled: true,
+      title: "Khoan đã nào...",
+      hint: "Gợi ý: đây là tên 1 người teddie rất yêu :>",
+      placeholder: "tên người đó là...",
+      submitLabel: "Mở thư",
+      errorText: "Chưa đúng rồi, thử lại xem :>",
+      // Gõ hoa hay thường, có dấu hay không dấu đều qua được.
+      answers: ["mina", "my", "nguyễn huyền my", "huyền my", "naiuoy"],
+    },
     fonts: { heading: "great-vibes", body: "be-vietnam", accent: "mali" },
     typography: baseType(),
   },

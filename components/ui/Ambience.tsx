@@ -1,9 +1,10 @@
-"use client";
+import type { CSSProperties } from "react";
 
-import { motion, useReducedMotion } from "motion/react";
+import { cx } from "@/lib/cx";
 
 /**
  * Vài đốm sáng trôi rất chậm phía sau nội dung, cho nền đỡ phẳng.
+ *
  * Toạ độ cố định sẵn (không random) để HTML dựng ở máy chủ và ở trình duyệt
  * khớp nhau, tránh cảnh báo hydration.
  */
@@ -18,13 +19,27 @@ const MOTES = [
   { x: 44, y: 8, size: 2, delay: 3.1, drift: -22, duration: 20 },
 ];
 
+/**
+ * Nền chung của cả năm trang.
+ *
+ * Chạy bằng CSS thuần, cố ý KHÔNG dùng `motion`. Trước đây mỗi đốm là một
+ * `motion.span` lặp vô hạn: tám vòng lặp chạy trên luồng chính, ở mọi trang,
+ * suốt thời gian trang mở — đúng luồng mà mưa hoa cũng đang dùng. CSS
+ * keyframes chỉ động vào transform và opacity nên Safari đẩy hẳn xuống luồng
+ * ghép ảnh.
+ *
+ * Đổi lại còn bỏ được cả "use client": component này giờ không kèm theo một
+ * dòng JavaScript nào xuống trình duyệt. Máy bật "giảm chuyển động" vẫn được
+ * tôn trọng, nhờ khối `prefers-reduced-motion` chung trong globals.css.
+ */
 export function Ambience({ className }: { className?: string }) {
-  const reduced = useReducedMotion();
-
   return (
     <div
       aria-hidden
-      className={`pointer-events-none absolute inset-0 overflow-hidden ${className ?? ""}`}
+      className={cx(
+        "pointer-events-none absolute inset-0 overflow-hidden",
+        className,
+      )}
     >
       {/* Quầng sáng ấm ở giữa, giữ mắt vào trung tâm. */}
       <div
@@ -35,31 +50,30 @@ export function Ambience({ className }: { className?: string }) {
         }}
       />
 
-      {reduced
-        ? null
-        : MOTES.map((mote, i) => (
-            <motion.span
-              key={i}
-              className="bg-gold/40 absolute rounded-full blur-[1px]"
-              style={{
-                left: `${mote.x}%`,
-                top: `${mote.y}%`,
-                width: mote.size,
-                height: mote.size,
-              }}
-              animate={{
-                y: [0, -mote.drift, 0],
-                x: [0, mote.drift * 0.4, 0],
-                opacity: [0.15, 0.6, 0.15],
-              }}
-              transition={{
-                duration: mote.duration,
-                delay: mote.delay,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            />
-          ))}
+      {MOTES.map((mote, i) => (
+        <span
+          key={i}
+          // Bốn đốm sau chỉ hiện từ màn vừa trở lên. Trên điện thoại vừa chật
+          // vừa chẳng ai nhìn ra là có tám hay bốn.
+          className={cx(
+            "mote absolute rounded-full",
+            i >= 4 && "hidden sm:block",
+          )}
+          style={
+            {
+              left: `${mote.x}%`,
+              top: `${mote.y}%`,
+              // Vẽ to hơn lõi sáng để chỗ gradient nhạt dần có đất diễn.
+              width: mote.size * 2.6,
+              height: mote.size * 2.6,
+              animationDuration: `${mote.duration}s`,
+              animationDelay: `${mote.delay}s`,
+              "--mote-dx": `${mote.drift * 0.4}px`,
+              "--mote-dy": `${-mote.drift}px`,
+            } as CSSProperties
+          }
+        />
+      ))}
     </div>
   );
 }

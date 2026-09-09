@@ -39,6 +39,35 @@
   animation: trail-drift 2.6s linear infinite;
 }
 
+/* Đốm sáng nền trôi qua trôi lại. Chỉ động vào transform và opacity nên
+   Safari đẩy hẳn xuống luồng ghép ảnh, luồng chính không phải làm gì.
+   Khoảng dịch của từng đốm truyền vào qua --mote-dx / --mote-dy. */
+@keyframes mote-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.15;
+  }
+  50% {
+    transform: translate3d(var(--mote-dx, 0px), var(--mote-dy, 0px), 0);
+    opacity: 0.6;
+  }
+}
+@utility mote {
+  /* Mềm bằng gradient chứ không bằng filter: tám bộ lọc làm mờ chạy vĩnh
+     viễn là tám lớp Safari phải dựng lại mỗi khung hình, mà nhìn không khác. */
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--c-gold) 85%, transparent) 0%,
+    color-mix(in srgb, var(--c-gold) 55%, transparent) 26%,
+    transparent 68%
+  );
+  opacity: 0.15;
+  animation-name: mote-drift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
 @utility sprockets-h {
   background-image: repeating-linear-gradient(
     to right,

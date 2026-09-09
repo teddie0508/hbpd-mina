@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 /** Thời lượng bản rút gọn, dùng khi máy bật "giảm chuyển động". */
 const REDUCED_EXIT = 0.5;
@@ -15,44 +15,45 @@ const REDUCED_EXIT = 0.5;
  */
 export function Envelope({
   monogram,
-  onOpen,
+  opened,
+  onRequestOpen,
   onFinished,
 }: {
   /** Chữ khắc trên sáp niêm phong. */
   monogram: string;
+  /**
+   * Trạng thái mở do bên ngoài giữ, không phải state riêng ở đây.
+   *
+   * Cần vậy vì giữa cú chạm và lúc phong bì thật sự mở còn một lớp hỏi tên:
+   * chạm vào chỉ là *xin* mở, trả lời đúng rồi bên ngoài mới bật cờ này.
+   */
+  opened: boolean;
   /** Chạy ngay trong cú chạm — chỗ duy nhất iOS cho phép bật nhạc.
    *  Cũng là lúc phía ngoài bật lớp loé sáng: lớp đó KHÔNG đặt được ở đây,
    *  vì phần tử cha có perspective nên "fixed" bám vào khung phong bì
    *  chứ không phải viewport (perspective tạo containing block cho fixed). */
-  onOpen: () => void;
+  onRequestOpen: () => void;
   /** Chạy khi animation kết thúc, để chuyển sang trang tiếp theo. */
   onFinished: () => void;
 }) {
-  const [opened, setOpened] = useState(false);
   const reduced = useReducedMotion();
-  const timerRef = useRef<number | null>(null);
+  const finishRef = useRef(onFinished);
+  finishRef.current = onFinished;
 
+  // Máy bật "giảm chuyển động" thì dùng hẳn một kịch bản khác: chỉ mờ dần
+  // rồi sang trang. Trước đây tôi tua nhanh chính hoạt cảnh cũ gấp bảy lần
+  // rồi chuyển trang ngay lập tức, nên nó bị cắt ngang giữa chừng — nhìn
+  // như trang bị giật chứ không phải như một lựa chọn có chủ đích.
   useEffect(() => {
-    return () => {
-      if (timerRef.current !== null) window.clearTimeout(timerRef.current);
-    };
-  }, []);
+    if (!opened || !reduced) return;
+    const id = window.setTimeout(
+      () => finishRef.current(),
+      REDUCED_EXIT * 1000,
+    );
+    return () => window.clearTimeout(id);
+  }, [opened, reduced]);
 
   const t = (seconds: number) => seconds;
-
-  function handleOpen() {
-    if (opened) return;
-    setOpened(true);
-    onOpen();
-
-    // Máy bật "giảm chuyển động" thì dùng hẳn một kịch bản khác: chỉ mờ dần
-    // rồi sang trang. Trước đây tôi tua nhanh chính hoạt cảnh cũ gấp bảy lần
-    // rồi chuyển trang ngay lập tức, nên nó bị cắt ngang giữa chừng — nhìn
-    // như trang bị giật chứ không phải như một lựa chọn có chủ đích.
-    if (reduced) {
-      timerRef.current = window.setTimeout(onFinished, REDUCED_EXIT * 1000);
-    }
-  }
 
   return (
     <div
@@ -89,7 +90,7 @@ export function Envelope({
       >
         <button
           type="button"
-          onClick={handleOpen}
+          onClick={onRequestOpen}
           disabled={opened}
           aria-label="Mở phong bì"
           className="group relative block aspect-[1.5/1] w-full cursor-pointer disabled:cursor-default"

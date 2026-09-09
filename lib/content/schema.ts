@@ -106,9 +106,36 @@ export interface ThemeColors {
   mist: string;
 }
 
+/**
+ * Lớp hỏi tên hiện ra sau khi chạm phong bì.
+ *
+ * Gọi là "mật khẩu" cho vui chứ mục đích là tạo bất ngờ, nên: gõ hoa hay
+ * thường, có dấu hay không dấu đều qua (xem `lib/passphrase.ts`), và ô nhập
+ * để chữ hiện rõ chứ không che bằng dấu chấm.
+ */
+export interface PassphraseContent {
+  enabled: boolean;
+  title: string;
+  /** Dòng gợi ý ngay dưới ô nhập. */
+  hint: string;
+  placeholder: string;
+  submitLabel: string;
+  /** Hiện khi trả lời sai. */
+  errorText: string;
+  /**
+   * Các đáp án được chấp nhận.
+   *
+   * KHÔNG BAO GIỜ để danh sách này rơi xuống trình duyệt — `forClient()` cắt
+   * nó đi, và phần so đáp án nằm trong Server Action. Nếu không thì chỉ cần
+   * mở View Source là thấy hết, hỏng mất bất ngờ.
+   */
+  answers: string[];
+}
+
 export interface LandingContent {
   headline: string;
   subline: string;
+  passphrase: PassphraseContent;
   fonts: FontSet;
   typography: TypeSet;
 }
@@ -211,6 +238,24 @@ export interface SiteContent {
   memories: MemoriesContent;
   flowers: FlowersContent;
   music: MusicContent;
+}
+
+/**
+ * Bản nội dung an toàn để gửi xuống trình duyệt.
+ *
+ * Cả `<ContentProvider>` ở layout gốc lẫn trang bìa đều đẩy nguyên object này
+ * vào payload của React, tức là nó nằm sẵn trong HTML ai xem cũng đọc được.
+ * Đáp án của lớp hỏi tên phải cắt đi trước, không thì mở View Source là biết
+ * ngay phải gõ gì.
+ */
+export function forClient(content: SiteContent): SiteContent {
+  return {
+    ...content,
+    landing: {
+      ...content.landing,
+      passphrase: { ...content.landing.passphrase, answers: [] },
+    },
+  };
 }
 
 export const CONTENT_VERSION = 1;

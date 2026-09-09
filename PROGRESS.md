@@ -45,7 +45,7 @@ lib/
   {fonts,theme,auth,placeholder,bouquet,crop,text,cx}.ts
 ```
 
-## Hai mươi cái bẫy đã gặp, đừng dẫm lại
+## Hai mươi tư cái bẫy đã gặp, đừng dẫm lại
 
 1. **Không khai `--font-*` trong `@theme`.** Biến trong `@theme` nằm ở `:root` nên `var()` bị thay thế **ngay tại `:root`**; khối con đặt lại `--f-heading` sẽ vô tác dụng. Font phải khai bằng `@utility font-heading { font-family: var(--f-heading) }`.
 
@@ -88,6 +88,14 @@ lib/
 19. **Đừng để một hoạt cảnh tự hủy ngay lúc nó gọi `onDone`.** `PetalStorm` từng nhận `active={phase === "storm"}`; gọi `onDone` là khối cha đổi cảnh, `active` thành false, canvas bị gỡ ngay — nên đoạn nhạt dần 1,8 giây không bao giờ chạy và cánh hoa biến mất phựt một cái. Nay component tự giữ vòng đời bằng state `running` của chính nó, `active` chỉ dùng để khởi động. Đổi lại phải có lưới an toàn riêng để dọn (`fallbackEnd`), vì khi tab bị ẩn thì `requestAnimationFrame` đứng hẳn và vòng lặp không bao giờ tự kết thúc.
 
 20. **Đừng để hai canvas phủ kín màn hình cùng tô một lượt.** Mưa hoa còn nhạt dần gần hai giây sau khi màn kết hiện ra, mà màn kết lại thả tiếp lớp cánh hoa trôi — đúng lúc nặng nhất thì có hai lớp toàn màn hình cùng chạy. Lớp trôi nay chờ 1,8 giây rồi mới gắn vào. Trên điện thoại cả hai lớp cũng hạ tỉ lệ điểm ảnh xuống 1,5 thay vì 2 (cánh hoa vốn mềm và mờ, mắt không nhận ra, mà số điểm ảnh phải tô chỉ còn hơn một nửa).
+
+21. **Đừng đổi `key` để chạy lại một hoạt ảnh nếu bên trong có ô nhập.** Cú lắc báo sai của panel hỏi tên ban đầu chạy bằng cách tăng `key` của khối bọc cho React dựng lại. Lắc thì có lắc, nhưng dựng lại khối bọc là dựng lại luôn ô nhập bên trong: mất con trỏ, và trên điện thoại là **sập bàn phím ngay sau lần gõ sai đầu tiên**. Dùng `useAnimationControls()` rồi `controls.start(...)` thì không đụng gì tới DOM.
+
+22. **Đường phản hồi cho người dùng không được phụ thuộc vào hoạt ảnh.** Câu báo "sai rồi" từng nằm trong `AnimatePresence mode="wait"`: câu cũ phải chạy xong hoạt cảnh biến đi thì câu mới mới được gắn vào. Máy nào hoạt ảnh bị bóp là câu báo không bao giờ hiện. Chữ báo lỗi giờ nằm trong một thẻ `<p>` cố định, chỉ đổi nội dung và màu.
+
+23. **Nhạc phải bật đúng trong cú chạm phong bì, kể cả khi còn lớp hỏi tên.** iOS chỉ cho phát tiếng từ bên trong một cử chỉ thật, mà bấm nút trong panel rồi `await` máy chủ là đã qua một lượt — cử chỉ hết hiệu lực, nhạc câm. Nên `audio.start()` gọi ngay lúc chạm phong bì, trước cả khi biết cô ấy có trả lời đúng hay không.
+
+24. **Nội dung truyền vào client component nằm nguyên trong HTML.** Danh sách đáp án của lớp hỏi tên phải đi qua `forClient()` để cắt trước khi vào `<ContentProvider>` và vào trang bìa; phần so đáp án nằm trong Server Action. Không thì mở View Source là thấy hết. Cách kiểm: `fetch('/')` rồi tìm chuỗi đáp án trong HTML trả về.
 
 Ngoài ra: `placehold.co` mặc định trả SVG mà bộ tối ưu ảnh của Next chặn SVG — URL ảnh giữ chỗ phải có đuôi `.png`.
 
