@@ -29,6 +29,7 @@ import { ImageListField } from "./ImageListField";
 import {
   ColorInput,
   Field,
+  LinesArea,
   TypographyPicker,
   RevealDateTime,
   SectionCard,
@@ -280,17 +281,10 @@ function PassphraseFields({
             label="Các đáp án được chấp nhận"
             hint="Mỗi dòng một đáp án. Gõ hoa hay thường, có dấu hay không dấu đều qua. Danh sách này không bao giờ gửi xuống trình duyệt."
           >
-            <TextArea
+            <LinesArea
               rows={5}
-              value={value.answers.join("\n")}
-              onChange={(text) =>
-                onChange({
-                  answers: text
-                    .split("\n")
-                    .map((line) => line.trim())
-                    .filter(Boolean),
-                })
-              }
+              value={value.answers}
+              onChange={(answers) => onChange({ answers })}
             />
           </Field>
         </>
@@ -837,17 +831,10 @@ function TeddieSpotFields({
         onRemove={() => onChange({ image: null })}
       />
       <Field label={`Lời thoại — ${label}`} hint={hint}>
-        <TextArea
+        <LinesArea
           rows={3}
-          value={value.lines.join("\n")}
-          onChange={(text) =>
-            onChange({
-              lines: text
-                .split("\n")
-                .map((line) => line.trim())
-                .filter(Boolean),
-            })
-          }
+          value={value.lines}
+          onChange={(lines) => onChange({ lines })}
         />
       </Field>
     </div>

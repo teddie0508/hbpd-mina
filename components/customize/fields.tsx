@@ -66,11 +66,14 @@ export function TextInput({
 export function TextArea({
   value,
   onChange,
+  onBlur,
   rows = 6,
   placeholder,
 }: {
   value: string;
   onChange: (value: string) => void;
+  /** Chạy khi rời ô — chỗ để dọn dẹp mà không cản người đang gõ. */
+  onBlur?: () => void;
   rows?: number;
   placeholder?: string;
 }) {
@@ -80,7 +83,50 @@ export function TextArea({
       rows={rows}
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
+      onBlur={onBlur}
       className={cx(INPUT, "resize-y leading-relaxed")}
+    />
+  );
+}
+
+/**
+ * Ô nhập một danh sách: mỗi dòng một mục.
+ *
+ * Trong lúc gõ thì giữ NGUYÊN từng ký tự, chỉ tách dòng thô. Bản đầu tiên cắt
+ * khoảng trắng và bỏ dòng rỗng ngay ở mỗi phím gõ, hậu quả là ô gần như không
+ * gõ nổi: dấu cách vừa bấm bao giờ cũng là ký tự cuối nên bị `trim()` xoá
+ * ngay, còn Enter thì sinh ra một dòng rỗng và dòng đó bị `filter(Boolean)`
+ * xoá đúng lúc vừa sinh ra.
+ *
+ * Việc dọn dẹp dời tới lúc rời ô. Bên đọc cũng tự lọc lại lần nữa, nên dù có
+ * dòng rỗng lọt vào bản lưu thì trang chính vẫn không hiện ra bong bóng trống.
+ */
+export function LinesArea({
+  value,
+  onChange,
+  rows = 3,
+  placeholder,
+}: {
+  value: string[];
+  onChange: (lines: string[]) => void;
+  rows?: number;
+  placeholder?: string;
+}) {
+  const tidy = () => {
+    const cleaned = value.map((line) => line.trim()).filter(Boolean);
+    const changed =
+      cleaned.length !== value.length ||
+      cleaned.some((line, i) => line !== value[i]);
+    if (changed) onChange(cleaned);
+  };
+
+  return (
+    <TextArea
+      rows={rows}
+      placeholder={placeholder}
+      value={value.join("\n")}
+      onChange={(text) => onChange(text.split("\n"))}
+      onBlur={tidy}
     />
   );
 }
