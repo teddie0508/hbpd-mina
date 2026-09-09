@@ -9,6 +9,8 @@ import { fontVars } from "@/lib/theme";
 import { Ambience } from "@/components/ui/Ambience";
 import { WarmFlash } from "@/components/ui/WarmFlash";
 
+import { MusicHint } from "./MusicHint";
+
 const HREF: Record<HubKey, string> = {
   message: "/message",
   memories: "/memories",
@@ -27,6 +29,8 @@ export function Hub({ content }: { content: HubContent }) {
       {/* Bắt đầu ở trạng thái sáng rồi tan dần — nối liền vào cú loé
           lúc mở phong bì, nên mắt không thấy mối nối giữa hai trang. */}
       <WarmFlash show={false} fadeIn={false} duration={0.9} />
+
+      <MusicHint text={content.musicHint} />
 
       <div className="relative z-10 w-full max-w-4xl">
         <motion.h1

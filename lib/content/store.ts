@@ -1,6 +1,6 @@
 import "server-only";
 
-import { list, put } from "@vercel/blob";
+import { del, list, put } from "@vercel/blob";
 import { cache } from "react";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -9,8 +9,41 @@ import { BLOB_PREFIX } from "../blob-paths";
 import { cloneDefaults } from "./defaults";
 import { CONTENT_VERSION, type SiteContent } from "./schema";
 
-const BLOB_PATH = `${BLOB_PREFIX}content/site.json`;
+const CONTENT_PREFIX = `${BLOB_PREFIX}content/`;
+
+/**
+ * Bản lưu của thời kỳ ghi đè lên một đường dẫn cố định. Chỉ còn dùng để đọc,
+ * và chỉ khi chưa có bản đánh số nào — tức đúng một lần, ngay sau khi lên bản
+ * này. Không bao giờ ghi vào nữa, cũng không xoá: giữ lại làm phao cứu sinh
+ * nếu có lúc phải deploy lùi về bản code cũ.
+ */
+const LEGACY_BLOB_PATH = `${CONTENT_PREFIX}site.json`;
+
+/** `site-<13 chữ số mốc thời gian>-<6 ký tự ngẫu nhiên>.json` */
+const VERSION_RE = /^site-\d{13}-[0-9a-f]{6}\.json$/;
+
+/** Giữ lại vài bản gần nhất phòng khi cần xem lại, còn đâu dọn sạch. */
+const KEEP_VERSIONS = 3;
+
 const LOCAL_PATH = path.join(process.cwd(), ".data", "content.json");
+
+/** Tên file của bản lưu, tính trong thư mục nội dung. */
+function versionName(pathname: string): string {
+  return pathname.slice(CONTENT_PREFIX.length);
+}
+
+/**
+ * Các bản đã lưu, mới nhất đứng đầu.
+ *
+ * Sắp theo chính tên file chứ không theo `uploadedAt`: mốc thời gian nằm
+ * ngay trong tên, cố định 13 chữ số nên so chuỗi là ra đúng thứ tự, và không
+ * phụ thuộc vào metadata mà `list()` có lúc trả về còn trễ một nhịp.
+ */
+function sortedVersions<T extends { pathname: string }>(blobs: T[]): T[] {
+  return blobs
+    .filter((b) => VERSION_RE.test(versionName(b.pathname)))
+    .sort((a, b) => (a.pathname < b.pathname ? 1 : -1));
+}
 
 /**
  * Có token Blob thì dùng Vercel Blob (bản deploy).
@@ -63,22 +96,17 @@ function mergeIntoDefaults(saved: unknown): SiteContent {
 
 async function readRaw(): Promise<unknown | null> {
   if (usingBlob()) {
-    // list() gọi thẳng API của Blob nên luôn trả về thông tin mới nhất.
-    const { blobs } = await list({ prefix: BLOB_PATH, limit: 10 });
-    const found = blobs.find((b) => b.pathname === BLOB_PATH);
-    if (!found) return null;
+    const { blobs } = await list({ prefix: CONTENT_PREFIX, limit: 100 });
 
-    // Vì ghi đè cùng một đường dẫn nên URL không bao giờ đổi, mà Blob phục vụ
-    // file qua CDN. `cache: "no-store"` chỉ chặn cache phía Next, không xoá
-    // được bản cũ đang nằm ở CDN edge.
-    //
-    // Từng gắn uploadedAt lấy từ list() làm dấu, nhưng ngay sau khi ghi thì
-    // list() có lúc còn trả về mốc cũ, thế là đọc trúng bản cũ ở CDN. Dùng
-    // thời điểm đọc thì mỗi lần đọc là một URL chưa từng có, CDN không có gì
-    // để trả về bản cũ nữa.
-    const res = await fetch(`${found.url}?v=${Date.now()}`, {
-      cache: "no-store",
-    });
+    const newest =
+      sortedVersions(blobs)[0] ??
+      blobs.find((b) => b.pathname === LEGACY_BLOB_PATH);
+    if (!newest) return null;
+
+    // URL của bản đánh số chưa từng tồn tại trước lần lưu này, nên không có
+    // bản cũ nào nằm sẵn ở CDN để trả về. `cache: "no-store"` chỉ để chặn
+    // thêm lớp cache của Next.
+    const res = await fetch(newest.url, { cache: "no-store" });
     if (!res.ok) return null;
     return (await res.json()) as unknown;
   }
@@ -118,6 +146,23 @@ export const getContent = cache(async (): Promise<SiteContent> => {
   }
 });
 
+/**
+ * Dọn các bản lưu cũ, giữ lại vài bản gần nhất.
+ *
+ * Không bao giờ được để hỏng cả lượt lưu: nội dung đã ghi xong rồi, dọn dẹp
+ * thất bại thì cùng lắm là thừa vài file vài chục KB.
+ */
+async function pruneOldVersions(): Promise<void> {
+  try {
+    const { blobs } = await list({ prefix: CONTENT_PREFIX, limit: 100 });
+    const stale = sortedVersions(blobs).slice(KEEP_VERSIONS);
+    if (stale.length === 0) return;
+    await del(stale.map((b) => b.url));
+  } catch (err) {
+    console.error("[content] không dọn được bản lưu cũ:", err);
+  }
+}
+
 export async function saveContent(next: SiteContent): Promise<SiteContent> {
   // Trên Vercel, filesystem chỉ đọc. Không có token Blob mà cứ ghi file thì
   // sẽ ném lỗi EROFS rất khó hiểu, nên chặn sớm và nói thẳng nguyên nhân.
@@ -139,13 +184,31 @@ export async function saveContent(next: SiteContent): Promise<SiteContent> {
   const body = JSON.stringify(payload, null, 2);
 
   if (usingBlob()) {
-    await put(BLOB_PATH, body, {
+    // Mỗi lần lưu là một đường dẫn mới, KHÔNG ghi đè lên đường dẫn cũ.
+    //
+    // Trước đây luôn ghi đè `content/site.json` rồi trông vào
+    // `cacheControlMaxAge: 0` để CDN đừng giữ bản cũ. Đọc kỹ tài liệu mới
+    // thấy: "Cannot be set to a value lower than 1 minute" — số 0 bị nâng
+    // thầm lên 60 giây. Thế là lưu lần đầu thì thấy đổi (bản cũ đã hết hạn từ
+    // lâu), sửa tiếp rồi lưu ngay trong vòng một phút thì đọc lại vẫn ra bản
+    // cũ, dù Blob đã ghi nhận đúng giờ lưu mới. Thêm `?v=<thời điểm>` vào URL
+    // cũng không cứu được, vì CDN của Blob không tính query string vào khoá
+    // cache.
+    //
+    // Đường dẫn mới thì không còn gì để mà cũ: URL chưa từng được yêu cầu,
+    // và file cũng chưa từng bị ghi đè nên không dính chuyện kho lưu trữ đồng
+    // bộ trễ. Nhờ vậy bỏ luôn được cacheControlMaxAge — cứ để mặc định,
+    // nội dung ở một URL giờ là bất biến nên cache lâu lại càng tốt.
+    const stamp = String(Date.now()).padStart(13, "0");
+    const rand = crypto.randomUUID().replace(/-/g, "").slice(0, 6);
+
+    await put(`${CONTENT_PREFIX}site-${stamp}-${rand}.json`, body, {
       access: "public",
       contentType: "application/json",
       addRandomSuffix: false,
-      allowOverwrite: true,
-      cacheControlMaxAge: 0,
     });
+
+    await pruneOldVersions();
   } else {
     await fs.mkdir(path.dirname(LOCAL_PATH), { recursive: true });
     await fs.writeFile(LOCAL_PATH, body, "utf8");

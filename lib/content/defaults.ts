@@ -82,6 +82,7 @@ export const DEFAULT_CONTENT: SiteContent = {
       { key: "flowers", label: "Hoa", icon: null },
       // icon: null -> hiện ô chờ, bạn tải icon riêng lên ở /customize
     ],
+    musicHint: "nếu yêu muốn đổi bài nhạc khác mà yêu muốn",
     fonts: { heading: "pacifico", body: "be-vietnam", accent: "cormorant" },
     typography: baseType(),
   },
@@ -156,6 +157,7 @@ export const DEFAULT_CONTENT: SiteContent = {
     startOnEnvelopeOpen: true,
     volume: 0.55,
     loopPlaylist: true,
+    shuffle: false,
     tracks: [],
   },
 };

@@ -316,6 +316,16 @@ export function HubPanel({
         />
       </Field>
 
+      <Field
+        label="Dòng nhắc chỉ vào trình phát nhạc"
+        hint="Hiện kèm mũi tên ở góc trên bên phải, tự biến mất ngay khi Mina mở trình phát lần đầu. Để trống là tắt hẳn."
+      >
+        <TextInput
+          value={value.musicHint}
+          onChange={(musicHint) => onChange({ musicHint })}
+        />
+      </Field>
+
       <div className="grid gap-4 sm:grid-cols-3">
         {value.options.map((option, index) => (
           <div key={option.key} className="space-y-2">
@@ -693,6 +703,15 @@ export function MusicPanel({
           onChange={(loopPlaylist) => onChange({ loopPlaylist })}
           label="Hết danh sách thì quay lại bài đầu"
         />
+        <Toggle
+          checked={value.shuffle}
+          onChange={(shuffle) => onChange({ shuffle })}
+          label="Xáo bài: mở trang là bốc ngẫu nhiên một bài"
+        />
+        <p className="text-mist/55 -mt-1 text-xs">
+          Bật ở đây là mặc định mỗi lần mở trang. Trong trình phát cũng có nút
+          xáo riêng để bật tắt lúc đang nghe.
+        </p>
         <Field label="Âm lượng mặc định">
           <Slider
             value={value.volume}

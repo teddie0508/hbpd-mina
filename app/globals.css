@@ -39,6 +39,22 @@
   animation: trail-drift 2.6s linear infinite;
 }
 
+/* Mũi tên chỉ vào trình phát nhạc nhích lên nhích xuống cho đỡ chết cứng.
+   Viết bằng CSS chứ không bằng motion: đây là vòng lặp vô hạn, để nó nằm
+   trên luồng ghép ảnh thì luồng chính không phải đụng tới. */
+@keyframes note-nudge {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(2px, -4px, 0);
+  }
+}
+@utility note-nudge {
+  animation: note-nudge 2.4s ease-in-out infinite;
+}
+
 /* Đốm sáng nền trôi qua trôi lại. Chỉ động vào transform và opacity nên
    Safari đẩy hẳn xuống luồng ghép ảnh, luồng chính không phải làm gì.
    Khoảng dịch của từng đốm truyền vào qua --mote-dx / --mote-dy. */

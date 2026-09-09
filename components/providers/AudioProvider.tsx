@@ -22,6 +22,11 @@ interface AudioApi {
   unlocked: boolean;
   volume: number;
   muted: boolean;
+  /** Đang xáo thứ tự bài hay đi theo đúng danh sách đã soạn. */
+  shuffle: boolean;
+  /** Đã mở trình phát ra lần nào chưa — /hub dựa vào đây để cất dòng nhắc đi. */
+  playerOpened: boolean;
+  markPlayerOpened: () => void;
   /** Gọi TRỰC TIẾP trong handler của cú chạm đầu tiên, nếu không iOS sẽ chặn. */
   start: () => void;
   toggle: () => void;
@@ -30,12 +35,23 @@ interface AudioApi {
   select: (index: number) => void;
   setVolume: (v: number) => void;
   toggleMute: () => void;
+  setShuffle: (on: boolean) => void;
 }
 
 const AudioContext = createContext<AudioApi | null>(null);
 
 /** Nhớ bài đang nghe khi tải lại trang (hiếm, nhưng đỡ khó chịu). */
 const STATE_KEY = "mina.audio";
+
+/** Xáo bài kiểu Fisher–Yates. Trả về mảng mới, không đụng mảng gốc. */
+function shuffled<T>(items: T[]): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
 
 export function AudioProvider({
   music,
@@ -45,7 +61,17 @@ export function AudioProvider({
   children: ReactNode;
 }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const tracks = music.tracks;
+
+  /**
+   * Thứ tự đang dùng để nghe.
+   *
+   * Khởi tạo bằng ĐÚNG thứ tự đã soạn, không xáo ngay — máy chủ và trình
+   * duyệt phải dựng ra cùng một HTML, xáo ở đây là lệch hydration ngay. Việc
+   * xáo dời sang useEffect bên dưới, tức là sau khi hydrate xong.
+   */
+  const [tracks, setTracks] = useState<Track[]>(music.tracks);
+  const [shuffle, setShuffleState] = useState(music.shuffle);
+  const [playerOpened, setPlayerOpened] = useState(false);
 
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -58,40 +84,64 @@ export function AudioProvider({
   const resumeTime = useRef(0);
 
   const current = tracks[index] ?? null;
+  const currentRef = useRef(current);
+  currentRef.current = current;
 
-  // Khôi phục bài và âm lượng sau khi tải lại trang.
+  /** Đổi khi bạn thêm/bớt/đổi thứ tự bài ở /customize. */
+  const trackSig = music.tracks.map((t) => t.id).join("|");
+  const restored = useRef(false);
+
+  // Dựng thứ tự nghe, và khôi phục bài dở sau khi tải lại trang.
   //
   // Ghi nhớ theo ID của bài, KHÔNG phải theo vị trí. Trước đây lưu vị trí nên
   // sau khi đổi thứ tự ở /customize, trình duyệt khôi phục đúng "vị trí số N"
   // mà chỗ đó giờ đã là bài khác — nhìn như thay đổi thứ tự không có tác dụng.
   // Xoá bớt bài còn tệ hơn: vị trí cũ trỏ ra ngoài danh sách, current thành
-  // null và cả trình phát biến mất.
+  // null và cả trình phát biến mất. Giờ càng phải theo ID: bật xáo là thứ tự
+  // chẳng còn liên quan gì tới danh sách đã soạn nữa.
   useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem(STATE_KEY);
-      if (!raw) return;
-      const saved = JSON.parse(raw) as {
-        trackId?: string;
-        volume?: number;
-        muted?: boolean;
-        playing?: boolean;
-        time?: number;
-      };
-      if (typeof saved.trackId === "string") {
-        const found = tracks.findIndex((t) => t.id === saved.trackId);
-        // Bài cũ bị xoá thì quay về bài đầu, không để trỏ vào chỗ trống.
-        setIndex(found >= 0 ? found : 0);
+    const order = music.shuffle ? shuffled(music.tracks) : music.tracks;
+
+    // Lần đầu thì lấy bài dở trong sessionStorage; những lần sau (danh sách
+    // vừa đổi ở /customize) thì giữ nguyên bài đang nghe.
+    let wantedId: string | undefined = currentRef.current?.id;
+
+    if (!restored.current) {
+      restored.current = true;
+      wantedId = undefined;
+      try {
+        const raw = sessionStorage.getItem(STATE_KEY);
+        if (raw) {
+          const saved = JSON.parse(raw) as {
+            trackId?: string;
+            volume?: number;
+            muted?: boolean;
+            playing?: boolean;
+            time?: number;
+          };
+          if (typeof saved.trackId === "string") wantedId = saved.trackId;
+          if (typeof saved.volume === "number") setVolumeState(saved.volume);
+          if (typeof saved.muted === "boolean") setMuted(saved.muted);
+          if (saved.playing) shouldResume.current = true;
+          if (typeof saved.time === "number") resumeTime.current = saved.time;
+        }
+      } catch {
+        // sessionStorage bị chặn (chế độ riêng tư) — bỏ qua, không ảnh hưởng gì.
       }
-      if (typeof saved.volume === "number") setVolumeState(saved.volume);
-      if (typeof saved.muted === "boolean") setMuted(saved.muted);
-      if (saved.playing) shouldResume.current = true;
-      if (typeof saved.time === "number") resumeTime.current = saved.time;
-    } catch {
-      // sessionStorage bị chặn (chế độ riêng tư) — bỏ qua, không ảnh hưởng gì.
     }
-    // Chỉ chạy một lần lúc mở trang; về sau người nghe tự chọn bài.
+
+    const found = wantedId ? order.findIndex((t) => t.id === wantedId) : -1;
+
+    setShuffleState(music.shuffle);
+    setTracks(order);
+    // Bài cũ bị xoá thì quay về đầu danh sách, không để trỏ vào chỗ trống.
+    // Khi đang bật xáo, "đầu danh sách" chính là một bài ngẫu nhiên.
+    setIndex(found >= 0 ? found : 0);
+    // Cố ý bám `trackSig` chứ không bám thẳng `music.tracks`: mảng đó là một
+    // object mới sau mỗi lần máy chủ dựng lại, bám vào nó thì chỉ cần khối cha
+    // vẽ lại là danh sách bị xáo lại từ đầu.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [trackSig, music.shuffle]);
 
   // Danh sách ngắn lại mà con trỏ còn ở xa thì kéo về đầu, tránh mất trình phát.
   useEffect(() => {
@@ -231,20 +281,49 @@ export function AudioProvider({
     [tracks.length],
   );
 
+  /**
+   * Bật/tắt xáo giữa chừng mà không làm đứt bài đang nghe.
+   *
+   * Bật: dựng thứ tự mới rồi kéo bài đang nghe lên đầu.
+   * Tắt: trả về đúng thứ tự đã soạn, con trỏ nhảy tới chỗ của bài đó.
+   * Cả hai đường đều giữ nguyên `current`, nên khối nạp nguồn bên dưới nhận ra
+   * bài không đổi và không nạp lại — nhạc chạy liền mạch.
+   */
+  const setShuffle = useCallback(
+    (on: boolean) => {
+      const cur = currentRef.current;
+      const base = on ? shuffled(music.tracks) : music.tracks;
+      const order =
+        on && cur ? [cur, ...base.filter((t) => t.id !== cur.id)] : base;
+
+      setShuffleState(on);
+      setTracks(order);
+      const at = cur ? order.findIndex((t) => t.id === cur.id) : -1;
+      setIndex(at >= 0 ? at : 0);
+    },
+    [music.tracks],
+  );
+
   // Đổi bài: nạp nguồn mới rồi phát tiếp nếu đang trong trạng thái phát.
-  const firstRun = useRef(true);
+  //
+  // Bám theo ID của bài chứ không bám theo vị trí. Xáo thứ tự làm vị trí đổi
+  // trong khi vẫn là bài cũ; bám vị trí thì lần nào xáo cũng gọi el.load() và
+  // bài đang nghe bị tua về đầu.
+  const loadedId = useRef<string | null>(null);
   useEffect(() => {
     const el = audioRef.current;
     if (!el || !current) return;
-    if (firstRun.current) {
-      firstRun.current = false;
-      return;
-    }
+    if (loadedId.current === current.id) return;
+
+    const first = loadedId.current === null;
+    loadedId.current = current.id;
+    if (first) return;
+
     el.load();
     if (playing) playCurrent();
     // Chỉ chạy khi đổi bài, không chạy khi bấm tạm dừng.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index]);
+  }, [current?.id]);
 
   const api = useMemo<AudioApi>(
     () => ({
@@ -255,6 +334,9 @@ export function AudioProvider({
       unlocked,
       volume,
       muted,
+      shuffle,
+      playerOpened,
+      markPlayerOpened: () => setPlayerOpened(true),
       start,
       toggle,
       next,
@@ -262,6 +344,7 @@ export function AudioProvider({
       select,
       setVolume: setVolumeState,
       toggleMute: () => setMuted((m) => !m),
+      setShuffle,
     }),
     [
       tracks,
@@ -271,11 +354,14 @@ export function AudioProvider({
       unlocked,
       volume,
       muted,
+      shuffle,
+      playerOpened,
       start,
       toggle,
       next,
       prev,
       select,
+      setShuffle,
     ],
   );
 

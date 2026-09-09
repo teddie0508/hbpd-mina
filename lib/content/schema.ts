@@ -164,6 +164,8 @@ export interface HubOption {
 export interface HubContent {
   title: string;
   options: HubOption[];
+  /** Dòng nhắc kèm mũi tên chỉ vào trình phát nhạc. Để trống là tắt hẳn. */
+  musicHint: string;
   fonts: FontSet;
   typography: TypeSet;
 }
@@ -221,6 +223,8 @@ export interface MusicContent {
   /** 0..1 */
   volume: number;
   loopPlaylist: boolean;
+  /** Mở trang là bốc ngẫu nhiên một bài, và xáo luôn thứ tự cả danh sách. */
+  shuffle: boolean;
   tracks: Track[];
 }
 

@@ -45,7 +45,7 @@ lib/
   {fonts,theme,auth,placeholder,bouquet,crop,text,cx}.ts
 ```
 
-## Hai mươi tư cái bẫy đã gặp, đừng dẫm lại
+## Hai mươi lăm cái bẫy đã gặp, đừng dẫm lại
 
 1. **Không khai `--font-*` trong `@theme`.** Biến trong `@theme` nằm ở `:root` nên `var()` bị thay thế **ngay tại `:root`**; khối con đặt lại `--f-heading` sẽ vô tác dụng. Font phải khai bằng `@utility font-heading { font-family: var(--f-heading) }`.
 
@@ -96,6 +96,8 @@ lib/
 23. **Nhạc phải bật đúng trong cú chạm phong bì, kể cả khi còn lớp hỏi tên.** iOS chỉ cho phát tiếng từ bên trong một cử chỉ thật, mà bấm nút trong panel rồi `await` máy chủ là đã qua một lượt — cử chỉ hết hiệu lực, nhạc câm. Nên `audio.start()` gọi ngay lúc chạm phong bì, trước cả khi biết cô ấy có trả lời đúng hay không.
 
 24. **Nội dung truyền vào client component nằm nguyên trong HTML.** Danh sách đáp án của lớp hỏi tên phải đi qua `forClient()` để cắt trước khi vào `<ContentProvider>` và vào trang bìa; phần so đáp án nằm trong Server Action. Không thì mở View Source là thấy hết. Cách kiểm: `fetch('/')` rồi tìm chuỗi đáp án trong HTML trả về.
+
+25. **`cacheControlMaxAge` của Vercel Blob KHÔNG nhận giá trị dưới 60 giây.** Tài liệu ghi rõ "Cannot be set to a value lower than 1 minute", nên số 0 truyền vào bị nâng thầm lên 60. Hệ quả rất dễ đổ oan cho chỗ khác: lưu lần đầu thì thấy đổi (bản cũ ở CDN đã hết hạn từ lâu), sửa tiếp rồi lưu ngay trong vòng một phút thì đọc lại vẫn ra bản cũ — trong khi Blob vẫn ghi nhận đúng giờ lưu mới, nên nhìn như "ghi được mà không ăn". Thêm `?v=<thời điểm>` vào URL cũng vô ích, CDN của Blob không tính query string vào khoá cache. Cách sửa: **mỗi lần lưu ghi ra một đường dẫn mới** (`content/site-<13 chữ số>-<6 ký tự>.json`), đọc thì `list()` cả thư mục rồi lấy tên file lớn nhất. URL chưa từng tồn tại thì không có bản cũ nào để mà trả về, và file không bị ghi đè nên cũng không dính chuyện kho lưu trữ đồng bộ trễ. Dọn bớt, giữ ba bản gần nhất.
 
 Ngoài ra: `placehold.co` mặc định trả SVG mà bộ tối ưu ảnh của Next chặn SVG — URL ảnh giữ chỗ phải có đuôi `.png`.
 

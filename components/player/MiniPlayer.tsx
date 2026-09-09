@@ -13,6 +13,7 @@ import {
   PauseIcon,
   PlayIcon,
   PrevIcon,
+  ShuffleIcon,
   VolumeIcon,
 } from "./icons";
 
@@ -26,6 +27,13 @@ export function MiniPlayer() {
   const [open, setOpen] = useState(false);
   const [showList, setShowList] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+
+  // Báo cho cả cây biết trình phát đã được mở ít nhất một lần. /hub dựa vào
+  // đây để cất dòng nhắc "bấm vào đây đổi bài" đi.
+  const { markPlayerOpened } = audio;
+  useEffect(() => {
+    if (open) markPlayerOpened();
+  }, [open, markPlayerOpened]);
 
   // Bấm ra ngoài hoặc nhấn Esc thì thu gọn lại, tránh che mất nội dung.
   useEffect(() => {
@@ -121,6 +129,16 @@ export function MiniPlayer() {
                   onChange={(e) => audio.setVolume(Number(e.target.value))}
                   className="accent-gold hidden h-1 w-16 cursor-pointer sm:block"
                 />
+
+                {multi ? (
+                  <PlayerButton
+                    label={audio.shuffle ? "Tắt xáo bài" : "Xáo bài"}
+                    active={audio.shuffle}
+                    onClick={() => audio.setShuffle(!audio.shuffle)}
+                  >
+                    <ShuffleIcon />
+                  </PlayerButton>
+                ) : null}
 
                 {multi ? (
                   <PlayerButton
