@@ -74,7 +74,6 @@ export function Teddie({
   tapHint?: string;
 }) {
   const hop = useAnimationControls();
-  const [line, setLine] = useState(0);
   const [showBubble, setShowBubble] = useState(false);
   const [showHint, setShowHint] = useState(false);
   /** Tăng mỗi lần chạm để mấy quả tim được dựng lại và bay lại từ đầu. */
@@ -143,10 +142,8 @@ export function Teddie({
       /* bỏ qua */
     }
 
-    if (hasLines) {
-      setLine((i) => (i + 1) % lines.length);
-      openBubble();
-    }
+    // Chạm vào là gọi bong bóng ra lại, phòng khi nó vừa tự thu đi.
+    if (hasLines) openBubble();
   };
 
   return (
@@ -154,13 +151,10 @@ export function Teddie({
       <AnimatePresence>
         {showBubble && hasLines ? (
           <motion.div
-            // Key CỐ ĐỊNH, không gắn theo câu đang hiện.
-            //
-            // Gắn theo câu thì mỗi lần chạm là AnimatePresence coi như một
-            // bong bóng khác: bong bóng cũ ở lại chờ chạy xong hoạt cảnh biến
-            // đi trong khi bong bóng mới đã vào, hai cái xếp chồng nhau và đội
-            // bố cục lên suốt một phần ba giây. Giữ một bong bóng rồi đổi chữ
-            // bên trong thì không có lúc nào tồn tại hai cái.
+            // Key CỐ ĐỊNH. AnimatePresence lo mỗi việc hiện ra và thu lại;
+            // đổi key giữa chừng thì bong bóng cũ ở lại chờ chạy xong hoạt cảnh
+            // biến đi trong khi bong bóng mới đã vào, hai cái xếp chồng nhau và
+            // đội bố cục lên suốt một phần ba giây.
             key="bubble"
             initial={{ opacity: 0, y: 8, scale: 0.94 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -168,8 +162,16 @@ export function Teddie({
             transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
             className="paper relative ml-1 max-w-[13rem] rounded-2xl rounded-bl-md px-3.5 py-2.5 shadow-[0_10px_26px_-10px_rgba(0,0,0,0.7)] sm:max-w-[16rem]"
           >
+            {/* Mỗi dòng gõ ở /customize là một dòng trong bong bóng, và tất cả
+                hiện cùng lúc. Bản đầu cho chạm để lật sang câu tiếp — nghe thì
+                hay, nhưng người viết gõ hai dòng nối nhau thành một ý lại chỉ
+                thấy hiện một dòng, tưởng hỏng. */}
             <p className="font-accent text-ink/85 text-[0.82rem] leading-snug text-pretty sm:text-[0.92rem]">
-              {lines[line]}
+              {lines.map((dong, i) => (
+                <span key={i} className="block">
+                  {dong}
+                </span>
+              ))}
             </p>
             {/* Đuôi bong bóng chỉ xuống phía con gấu. */}
             <span className="bg-paper absolute -bottom-1 left-3 size-3 rotate-45 rounded-[2px]" />
@@ -227,7 +229,7 @@ export function Teddie({
               type="button"
               animate={hop}
               onClick={handleTap}
-              aria-label={hasLines ? lines[line] : "Teddie"}
+              aria-label={hasLines ? lines.join(". ") : "Teddie"}
               className="focus-visible:ring-gold/60 block cursor-pointer rounded-full outline-none focus-visible:ring-2"
             >
               <Image

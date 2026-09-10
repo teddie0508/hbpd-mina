@@ -848,7 +848,8 @@ export function TeddiePanel({
   value: TeddieContent;
   onChange: Patch<TeddieContent>;
 }) {
-  const hint = "Mỗi dòng một câu. Mina chạm vào gấu là sang câu tiếp theo.";
+  const hint =
+    "Mỗi dòng là một dòng trong bong bóng thoại, tất cả hiện cùng lúc.";
 
   return (
     <SectionCard
