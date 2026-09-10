@@ -6,11 +6,11 @@ import { Ambience } from "@/components/ui/Ambience";
 import { BackLink } from "@/components/ui/BackLink";
 import { HeartBalloons } from "@/components/ui/HeartBalloons";
 import { Reveal } from "@/components/ui/Reveal";
-import { WordsReveal } from "@/components/ui/WordsReveal";
 import type { MessageContent } from "@/lib/content/schema";
 import { fontVars } from "@/lib/theme";
 import { toParagraphs } from "@/lib/text";
 
+import { Letter } from "./Letter";
 import { PolaroidFan } from "./PolaroidFan";
 
 export function MessageScene({ content }: { content: MessageContent }) {
@@ -38,24 +38,10 @@ export function MessageScene({ content }: { content: MessageContent }) {
 
         <Flourish />
 
-        <div className="measure mx-auto mt-10 space-y-7 sm:mt-12">
-          {paragraphs.map((paragraph, i) => (
-            <WordsReveal
-              key={i}
-              text={paragraph}
-              delay={i * 0.15}
-              className="font-body text-cream/85 text-center text-[calc(clamp(1rem,3.4vw,1.15rem)*var(--fz-body,1))] leading-[1.85] text-pretty"
-            />
-          ))}
-        </div>
-
-        {content.signature ? (
-          <Reveal delay={0.1} className="mt-12 text-center">
-            <p className="font-accent text-gold/90 text-[calc(clamp(1.1rem,4vw,1.6rem)*var(--fz-accent,1))]">
-              {content.signature}
-            </p>
-          </Reveal>
-        ) : null}
+        {/* Chữ ký nằm luôn trong tờ giấy, đúng chỗ người ta ký một lá thư. */}
+        <Reveal delay={0.2} className="mt-10 sm:mt-12">
+          <Letter paragraphs={paragraphs} signature={content.signature} />
+        </Reveal>
 
         <div className="mt-16 sm:mt-20">
           <BackLink />

@@ -45,7 +45,7 @@ lib/
   {fonts,theme,auth,placeholder,bouquet,crop,text,cx}.ts
 ```
 
-## Hai mươi bảy cái bẫy đã gặp, đừng dẫm lại
+## Hai mươi tám cái bẫy đã gặp, đừng dẫm lại
 
 1. **Không khai `--font-*` trong `@theme`.** Biến trong `@theme` nằm ở `:root` nên `var()` bị thay thế **ngay tại `:root`**; khối con đặt lại `--f-heading` sẽ vô tác dụng. Font phải khai bằng `@utility font-heading { font-family: var(--f-heading) }`.
 
@@ -104,6 +104,8 @@ lib/
 27. **Đừng chuẩn hoá dữ liệu ngay trong `onChange` của ô nhập.** Ô "mỗi dòng một mục" (lời thoại của gấu, danh sách đáp án mật khẩu) từng `trim()` rồi `filter(Boolean)` ở MỖI phím gõ. Hậu quả là ô gần như không gõ nổi mà nhìn thì tưởng ô bị hỏng: dấu cách vừa bấm bao giờ cũng là ký tự cuối nên bị `trim()` xoá ngay, còn Enter thì sinh ra một dòng rỗng và dòng đó bị `filter` xoá đúng lúc vừa sinh ra. Lúc gõ chỉ được tách thô (`split("
 ")`), dọn dẹp dời sang `onBlur`, và bên đọc lọc lại lần nữa cho chắc — xem `LinesArea`. Cách kiểm: gõ từng ký tự một chứ đừng gán thẳng cả chuỗi, vì gán thẳng thì không lộ lỗi. Lưu ý khi kiểm bằng script: React nghe `focusout` chứ không nghe `blur`, và pane ẩn thì `el.focus()`/`el.blur()` không sinh ra sự kiện thật.
 
+28. **Giấy kẻ dòng: bước kẻ và line-height phải cùng một biến.** Tờ thư ở /message vẽ dòng kẻ bằng `repeating-linear-gradient`, chữ nằm đè lên. Lệch một hai pixel là mắt bắt được ngay, mà lệch thì tích luỹ dần xuống dưới. Vì vậy `--rule` vừa là bước kẻ, vừa là line-height của MỌI dòng chữ bên trong, và khoảng cách giữa hai đoạn cũng đúng bằng một `--rule`. `background-origin: content-box` cho dòng kẻ đầu tiên rơi đúng dưới dòng chữ đầu tiên, nên lề trên đặt bao nhiêu cũng không làm lệch. Cách kiểm: chia chiều cao từng thẻ `<p>` cho line-height, phải ra số nguyên chằn chặn (đo được 2.00 / 4.00 / 2.00 / 1.00).
+
 Ngoài ra: `placehold.co` mặc định trả SVG mà bộ tối ưu ảnh của Next chặn SVG — URL ảnh giữ chỗ phải có đuôi `.png`.
 
 ## Ghi chú công cụ
@@ -124,6 +126,8 @@ el.textContent = `
 
 - **Đừng tìm chuỗi nội dung trong HTML để đoán trang đang vẽ màn nào.** Cả nội dung đếm ngược lẫn nội dung phong bì đều được nhúng vào HTML dưới dạng dữ liệu, nên "Sắp tới rồi" luôn xuất hiện dù đang vẽ màn nào. Phải tìm dấu hiệu chỉ có ở một màn: `Mở phong bì` (nút phong bì) hoặc `role="timer"` (đồng hồ).
 - **`fetch` tự đi theo chuyển hướng**, nên `r.status` là mã của trang đích chứ không phải 307. Muốn biết có bị chặn hay không thì xem `r.redirected` và `r.url`.
+
+- **Đừng lồng nhiều `setTimeout` trong một script khi đo thời gian ở pane.** Tab ẩn thì trình duyệt bóp các hẹn giờ lồng nhau xuống tối thiểu một giây, có lúc còn hơn — xin 250ms mà nhận về cả giây. Đo tính năng "sau 3 giây tự lật lại" kiểu `await 1500; await 2000` rồi ghi nhãn "sau 3,5s" là tự lừa mình: thực tế đã trôi qua bao lâu thì không biết. Phải đo bằng `performance.now()` và chỉ dùng MỘT phép chờ mỗi lần gọi.
 
 ## Việc còn lại
 

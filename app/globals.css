@@ -247,6 +247,52 @@ body {
     color: var(--c-ink);
   }
 
+  /* Giấy viết thư: nền be ấm hơn giấy thường một chút, kèm vân sợi rất mờ.
+     Hai lớp gradient lặp chéo nhau đóng vai vân giấy — rẻ hơn nhiều so với
+     kéo về một ảnh texture, mà lại đổi màu theo bảng màu. */
+  .letter-paper {
+    background-color: color-mix(in srgb, var(--c-paper) 94%, var(--c-gold));
+    background-image:
+      radial-gradient(
+        ellipse at 12% 6%,
+        color-mix(in srgb, var(--c-gold) 12%, transparent),
+        transparent 55%
+      ),
+      radial-gradient(
+        ellipse at 88% 94%,
+        color-mix(in srgb, var(--c-sage) 10%, transparent),
+        transparent 60%
+      ),
+      repeating-linear-gradient(
+        114deg,
+        color-mix(in srgb, var(--c-ink) 4%, transparent) 0 1px,
+        transparent 1px 7px
+      ),
+      repeating-linear-gradient(
+        68deg,
+        color-mix(in srgb, var(--c-ink) 3%, transparent) 0 1px,
+        transparent 1px 11px
+      );
+    color: var(--c-ink);
+  }
+
+  /* Dòng kẻ ngang của giấy viết thư.
+     Bước kẻ và line-height của chữ BẮT BUỘC cùng lấy từ --rule, nếu không
+     chữ sẽ trôi lệch dần khỏi dòng kẻ — sai một hai pixel là mắt bắt được
+     ngay. `background-origin: content-box` cho dòng kẻ đầu tiên rơi đúng
+     dưới dòng chữ đầu tiên bất kể padding trên là bao nhiêu. */
+  .letter-ruled {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent calc(var(--rule) - 1px),
+      color-mix(in srgb, var(--c-ink) 24%, transparent) calc(var(--rule) - 1px),
+      color-mix(in srgb, var(--c-ink) 24%, transparent) var(--rule)
+    );
+    background-origin: content-box;
+    background-clip: content-box;
+  }
+
   /* Giữ tỉ lệ chữ dễ đọc trên cả MacBook Air lẫn iPhone. */
   .measure {
     max-width: 62ch;

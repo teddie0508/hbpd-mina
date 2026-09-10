@@ -2,9 +2,12 @@
 
 import { motion, useReducedMotion } from "motion/react";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { ASPECT_CSS, type ImageAsset } from "@/lib/content/schema";
+
+/** Lật xem mặt sau bao lâu thì tự úp lại. Đủ để đọc một dòng ghi chú ngắn. */
+const FLIP_BACK_MS = 3000;
 
 /**
  * Một tấm ảnh trên khối kỷ niệm.
@@ -42,6 +45,17 @@ export function BoardPhoto({
   const note = photo.note?.trim();
   const canFlip = Boolean(note);
 
+  // Đọc xong dòng ghi chú thì tự úp lại, khỏi phải bấm lần nữa.
+  //
+  // Hẹn giờ gắn vào chính trạng thái đang lật, không gắn vào cú bấm: bấm lật
+  // lại bằng tay giữa chừng thì effect dọn luôn cái hẹn giờ cũ, không còn cái
+  // nào lơ lửng để lát nữa úp nhầm tấm đang mở.
+  useEffect(() => {
+    if (!flipped) return;
+    const id = window.setTimeout(() => setFlipped(false), FLIP_BACK_MS);
+    return () => window.clearTimeout(id);
+  }, [flipped]);
+
   return (
     <motion.div
       className="gpu"
@@ -77,6 +91,9 @@ export function BoardPhoto({
           onClick={() => canFlip && setFlipped((f) => !f)}
           role={canFlip ? "button" : undefined}
           tabIndex={canFlip ? 0 : undefined}
+          // Nút bật/tắt thì phải khai aria-pressed, không thì trình đọc màn
+          // hình chỉ đọc được "nút", không biết ảnh đang ngửa hay đang úp.
+          aria-pressed={canFlip ? flipped : undefined}
           aria-label={canFlip ? `Lật ảnh: ${photo.alt}` : undefined}
           onKeyDown={(e) => {
             if (!canFlip) return;
