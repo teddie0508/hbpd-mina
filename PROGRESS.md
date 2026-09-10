@@ -45,7 +45,7 @@ lib/
   {fonts,theme,auth,placeholder,bouquet,crop,text,cx}.ts
 ```
 
-## Hai mươi chín cái bẫy đã gặp, đừng dẫm lại
+## Ba mươi cái bẫy đã gặp, đừng dẫm lại
 
 1. **Không khai `--font-*` trong `@theme`.** Biến trong `@theme` nằm ở `:root` nên `var()` bị thay thế **ngay tại `:root`**; khối con đặt lại `--f-heading` sẽ vô tác dụng. Font phải khai bằng `@utility font-heading { font-family: var(--f-heading) }`.
 
@@ -107,6 +107,8 @@ lib/
 28. **Giấy kẻ dòng: bước kẻ và line-height phải cùng một biến.** Tờ thư ở /message vẽ dòng kẻ bằng `repeating-linear-gradient`, chữ nằm đè lên. Lệch một hai pixel là mắt bắt được ngay, mà lệch thì tích luỹ dần xuống dưới. Vì vậy `--rule` vừa là bước kẻ, vừa là line-height của MỌI dòng chữ bên trong, và khoảng cách giữa hai đoạn cũng đúng bằng một `--rule`. `background-origin: content-box` cho dòng kẻ đầu tiên rơi đúng dưới dòng chữ đầu tiên, nên lề trên đặt bao nhiêu cũng không làm lệch. Cách kiểm: chia chiều cao từng thẻ `<p>` cho line-height, phải ra số nguyên chằn chặn (đo được 2.00 / 4.00 / 2.00 / 1.00).
 
 29. **Nạp sẵn ảnh chỉ ăn khi `sizes` khớp TUYỆT ĐỐI.** Gallery ở /memories yêu cầu một URL khác hẳn ảnh trên khối (704px so với 200px), nên bấm sang tấm sau là trình duyệt mới bắt đầu tải — chờ cả giây. Cách chữa là nạp sẵn hai tấm liền kề, nhưng phải nạp bằng chính `<Image>` với ĐÚNG bộ `sizes` và `quality` của tấm đang xem: `next/image` sinh `srcset` theo `sizes`, lệch một ký tự là ra một đường dẫn khác, nạp sẵn một tệp rồi lại đi tải tệp khác. Cùng lý do đó, lớp ảnh nhỏ hiện tạm trong lúc chờ phải khai đúng `sizes` của ảnh trên khối thì mới trúng bộ nhớ đệm. Cả hai chuỗi nay là hằng số dùng chung, không chép tay. Cách kiểm mà không phụ thuộc môi trường: so thuộc tính `srcset` và `sizes` của hai thẻ, giống hệt nhau thì trình duyệt buộc phải chọn cùng một tệp. Đừng đọc `img.src` để đoán tệp nào đang tải — khi ảnh chưa tải xong, `currentSrc` rỗng còn `src` là bản to nhất mà next/image đặt làm dự phòng, nhìn vào tưởng đang tải nhầm bản 2560px.
+
+30. **Thứ gì nằm NGOÀI thẻ `<main>` thì không có biến font.** `fontVars()` được đặt trên chính thẻ `<main>` của mỗi màn, mà `<Teddie>` lại là anh em với thẻ đó chứ không nằm trong. Hệ quả là nó rơi vào giá trị dự phòng ở `:root`, mà dự phòng của `--f-accent` là `cursive` — font script mặc định của hệ điều hành. Trên Windows là Comic Sans, đọc tạm được nên tưởng không sao; trên iOS là Snell Roundhand, nét mảnh như sợi chỉ, cỡ 13px là chịu. Đúng kiểu lỗi chỉ lộ ra trên một hệ máy. Cách kiểm: đọc `getComputedStyle(el).fontFamily`, ra đúng một từ `cursive` hay `serif` là đang dùng dự phòng chứ không phải font đã chọn. Nhân đó gấu được cấp bộ font riêng thay vì mượn font từng trang — nó là một nhân vật xuyên suốt nên phải có một giọng nói, mà mượn font từng trang thì có trang rơi vào serif nét mảnh không dành cho cỡ chữ nhỏ.
 
 Ngoài ra: `placehold.co` mặc định trả SVG mà bộ tối ưu ảnh của Next chặn SVG — URL ảnh giữ chỗ phải có đuôi `.png`.
 

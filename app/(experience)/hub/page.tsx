@@ -19,7 +19,12 @@ export default async function HubPage() {
     <>
       <Hub content={content.hub} />
       {content.teddie.enabled ? (
-        <Teddie spot={content.teddie.hub} tapHint={content.teddie.tapHint} />
+        <Teddie
+          spot={content.teddie.hub}
+          fonts={content.teddie.fonts}
+          typography={content.teddie.typography}
+          tapHint={content.teddie.tapHint}
+        />
       ) : null}
     </>
   );

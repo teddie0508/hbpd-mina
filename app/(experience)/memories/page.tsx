@@ -21,6 +21,8 @@ export default async function MemoriesPage() {
       {content.teddie.enabled ? (
         <Teddie
           spot={content.teddie.memories}
+          fonts={content.teddie.fonts}
+          typography={content.teddie.typography}
           tapHint={content.teddie.tapHint}
         />
       ) : null}

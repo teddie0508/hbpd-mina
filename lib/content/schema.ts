@@ -242,6 +242,17 @@ export interface TeddieContent {
   message: TeddieSpot;
   memories: TeddieSpot;
   flowers: TeddieSpot;
+  /**
+   * Font riêng cho gấu, KHÔNG mượn font của từng trang.
+   *
+   * Gấu là một nhân vật đi xuyên suốt bốn trang nên phải có một giọng nói duy
+   * nhất. Mượn font từng trang thì giọng nó đổi theo mỗi trang, mà tệ hơn là
+   * rơi vào những font không dành cho cỡ chữ nhỏ: font body của trang kỷ niệm
+   * là một serif nét mảnh, đặt bong bóng thoại 14px lên điện thoại là đọc
+   * không ra.
+   */
+  fonts: FontSet;
+  typography: TypeSet;
 }
 
 export interface MusicContent {

@@ -906,6 +906,14 @@ export function TeddiePanel({
               onChange({ flowers: { ...value.flowers, ...patch } })
             }
           />
+
+          <TypographyPicker
+            fonts={value.fonts}
+            type={value.typography}
+            onFontsChange={(fonts) => onChange({ fonts })}
+            onTypeChange={(typography) => onChange({ typography })}
+            sampleText={value.flowers.lines[0] || "Chọn đi em nhé"}
+          />
         </div>
       ) : null}
     </SectionCard>

@@ -54,6 +54,7 @@ export function usedFontKeys(content: SiteContent): string[] {
     content.message.fonts,
     content.memories.fonts,
     content.flowers.fonts,
+    content.teddie.fonts,
   ];
   return [...new Set(sets.flatMap((s) => [s.heading, s.body, s.accent]))];
 }

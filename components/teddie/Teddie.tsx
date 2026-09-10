@@ -4,7 +4,8 @@ import { AnimatePresence, motion, useAnimationControls } from "motion/react";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { TeddieSpot } from "@/lib/content/schema";
+import type { FontSet, TeddieSpot, TypeSet } from "@/lib/content/schema";
+import { fontVars } from "@/lib/theme";
 
 /** Bong bóng thoại tự thu lại sau chừng này, để nó không đứng chắn mãi. */
 const BUBBLE_MS = 6500;
@@ -67,9 +68,23 @@ function CurlyArrowToBear() {
  */
 export function Teddie({
   spot,
+  fonts,
+  typography,
   tapHint = "",
 }: {
   spot: TeddieSpot;
+  /**
+   * Font của trang đang đứng.
+   *
+   * BẮT BUỘC phải truyền vào: <Teddie> là anh em với thẻ <main> chứ không nằm
+   * trong đó, mà biến font lại đặt trên chính thẻ <main>. Thiếu thì nó rơi vào
+   * giá trị dự phòng ở :root — mà dự phòng của --f-accent là "cursive", tức
+   * font script mặc định của hệ điều hành. Trên Windows còn đọc tạm được, chứ
+   * trên iOS là Snell Roundhand: nét mảnh như sợi chỉ, cỡ chữ nhỏ là không
+   * đọc nổi.
+   */
+  fonts: FontSet;
+  typography: TypeSet;
   /** Dòng nhắc kèm mũi tên, chỉ hiện tới lần chạm đầu tiên. */
   tapHint?: string;
 }) {
@@ -147,7 +162,10 @@ export function Teddie({
   };
 
   return (
-    <div className="pointer-events-none fixed bottom-0 left-0 z-40 flex flex-col items-start gap-1 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4">
+    <div
+      style={fontVars(fonts, typography)}
+      className="pointer-events-none fixed bottom-0 left-0 z-40 flex flex-col items-start gap-1 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4"
+    >
       <AnimatePresence>
         {showBubble && hasLines ? (
           <motion.div
@@ -166,7 +184,10 @@ export function Teddie({
                 hiện cùng lúc. Bản đầu cho chạm để lật sang câu tiếp — nghe thì
                 hay, nhưng người viết gõ hai dòng nối nhau thành một ý lại chỉ
                 thấy hiện một dòng, tưởng hỏng. */}
-            <p className="font-accent text-ink/85 text-[0.82rem] leading-snug text-pretty sm:text-[0.92rem]">
+            {/* Dùng font-body chứ không phải font-accent: đây là chữ để ĐỌC,
+                mà font accent của vài trang là serif nét mảnh, cỡ nhỏ trên
+                điện thoại đọc rất mệt. Mực để nguyên độ đậm, không hạ xuống 85%. */}
+            <p className="font-body text-ink text-[calc(clamp(0.9rem,3.3vw,0.95rem)*var(--fz-body,1))] leading-snug text-pretty">
               {lines.map((dong, i) => (
                 <span key={i} className="block">
                   {dong}

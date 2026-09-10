@@ -21,6 +21,8 @@ export default async function MessagePage() {
       {content.teddie.enabled ? (
         <Teddie
           spot={content.teddie.message}
+          fonts={content.teddie.fonts}
+          typography={content.teddie.typography}
           tapHint={content.teddie.tapHint}
         />
       ) : null}

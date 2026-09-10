@@ -177,6 +177,10 @@ export const DEFAULT_CONTENT: SiteContent = {
       // Tương tự, đây là chỗ duy nhất gợi ra nút "the REAL flower".
       lines: ["Anh còn giấu một bó nữa cơ...", "Tìm kỹ đi, gần lắm."],
     },
+    // Mali: nét tròn, thân thiện, có đủ dấu tiếng Việt và quan trọng nhất là
+    // đọc được ở cỡ nhỏ — đúng thứ một bong bóng thoại cần.
+    fonts: { heading: "mali", body: "mali", accent: "mali" },
+    typography: baseType(),
   },
 
   music: {

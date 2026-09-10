@@ -21,6 +21,8 @@ export default async function FlowersPage() {
       {content.teddie.enabled ? (
         <Teddie
           spot={content.teddie.flowers}
+          fonts={content.teddie.fonts}
+          typography={content.teddie.typography}
           tapHint={content.teddie.tapHint}
         />
       ) : null}
