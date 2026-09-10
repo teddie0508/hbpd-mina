@@ -14,6 +14,17 @@ import {
 /** Kéo ngang quá chừng này (px) thì tính là muốn lật sang tấm khác. */
 const SWIPE_PX = 70;
 
+/**
+ * Hai chuỗi `sizes` này phải khớp TUYỆT ĐỐI với chỗ dùng tương ứng, nếu không
+ * mọi thứ bên dưới đổ vỡ hết:
+ *  - `GALLERY_SIZES` dùng chung cho tấm đang xem và hai tấm nạp sẵn. Lệch nhau
+ *    là hai đường dẫn khác nhau, nạp sẵn một tệp rồi lại tải tệp khác.
+ *  - `THUMB_SIZES` phải giống hệt `sizes` của ảnh trên khối (BoardPhoto), vì
+ *    cả mẹo hiện-ngay-lập-tức dựa vào việc tệp đó đã nằm sẵn trong bộ nhớ đệm.
+ */
+export const GALLERY_SIZES = "(max-width: 768px) 92vw, 704px";
+export const THUMB_SIZES = "(max-width: 768px) 44vw, 200px";
+
 function ArrowIcon({ back = false }: { back?: boolean }) {
   return (
     <svg
@@ -113,6 +124,15 @@ export function PhotoGallery({
 
   const photo = index === null ? null : photos[index];
 
+  // Hai tấm liền kề, để nạp sẵn trước khi Mina kịp bấm sang.
+  const canhBen =
+    index === null || photos.length < 2
+      ? []
+      : [
+          photos[(index + 1) % photos.length],
+          photos[(index - 1 + photos.length) % photos.length],
+        ].filter((p, i, all) => p && all.findIndex((q) => q.id === p.id) === i);
+
   return createPortal(
     <AnimatePresence>
       {photo ? (
@@ -127,6 +147,30 @@ export function PhotoGallery({
           transition={{ duration: 0.28, ease: "easeOut" }}
           className="bg-base/95 fixed inset-0 z-[80] flex flex-col"
         >
+          {/* Nạp sẵn tấm liền trước và liền sau, để bấm next là có ngay.
+              Cố ý dựng bằng chính <Image> với ĐÚNG bộ props của tấm đang xem
+              (`sizes`, `quality`) chứ không tự ghép URL: chỉ cần lệch một tham
+              số là ra một đường dẫn khác, tải về một tệp khác, và công nạp sẵn
+              thành vô ích. `loading="eager"` vì khối này bé 1px — để mặc định
+              lười tải thì trình duyệt có quyền hoãn vô thời hạn. */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute size-px overflow-hidden opacity-0"
+          >
+            {canhBen.map((p) => (
+              <div key={p.id} className="relative size-px">
+                <Image
+                  src={p.url}
+                  alt=""
+                  fill
+                  sizes={GALLERY_SIZES}
+                  quality={90}
+                  loading="eager"
+                />
+              </div>
+            ))}
+          </div>
+
           {/* Bấm ra vùng trống là đóng. Nút phủ kín nền, ảnh nằm đè lên trên. */}
           <button
             type="button"
@@ -217,11 +261,30 @@ function GalleryPhoto({
         else if (info.offset.x > SWIPE_PX) onSwipe(-1);
       }}
     >
+      {/* Bản nhỏ, khai ĐÚNG `sizes` của ảnh trên khối nên nó chính là tệp
+          trình duyệt đã tải từ lúc xem khối — lấy ra từ bộ nhớ đệm, hiện tức
+          thì. Phóng lên 704px thì tất nhiên là nhoè, nhưng nhoè vẫn hơn một ô
+          trống: mắt có cái để bám vào trong lúc bản lớn đang về. */}
+      <Image
+        src={photo.url}
+        alt=""
+        aria-hidden
+        fill
+        sizes={THUMB_SIZES}
+        quality={90}
+        className="pointer-events-none scale-105 object-cover blur-[6px] select-none"
+      />
+
+      {/* Bản lớn nằm ĐÈ LÊN bản nhỏ, và cố ý không gắn state "đã tải xong"
+          nào cả: thẻ <img> chưa tải xong thì vốn dĩ trong suốt, nên bản nhỏ
+          phía dưới hiện ra, tải xong thì nó tự tô đè lên. Không cần onLoad,
+          cũng không có đường nào để kẹt ở trạng thái ẩn nếu sự kiện load lỡ
+          bắn trước khi React kịp gắn handler. */}
       <Image
         src={photo.url}
         alt={photo.alt}
         fill
-        sizes="(max-width: 768px) 92vw, 704px"
+        sizes={GALLERY_SIZES}
         quality={90}
         priority
         className="pointer-events-none object-cover select-none"

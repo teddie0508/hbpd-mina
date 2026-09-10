@@ -5,6 +5,8 @@ import Image from "next/image";
 
 import { ASPECT_CSS, type ImageAsset } from "@/lib/content/schema";
 
+import { THUMB_SIZES } from "./PhotoGallery";
+
 /**
  * Một tấm ảnh trên khối kỷ niệm.
  *
@@ -84,7 +86,11 @@ export function BoardPhoto({
               src={photo.url}
               alt={photo.alt}
               fill
-              sizes="(max-width: 768px) 44vw, 200px"
+              // Dùng chung hằng số với gallery, KHÔNG chép tay lại chuỗi:
+              // gallery lấy đúng tệp này ra làm ảnh nền tạm lúc chờ bản lớn,
+              // hai bên lệch nhau một ký tự là thành hai tệp khác nhau và mẹo
+              // đó mất tác dụng.
+              sizes={THUMB_SIZES}
               quality={90}
               className="object-cover"
             />
