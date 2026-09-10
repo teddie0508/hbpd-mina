@@ -98,48 +98,32 @@ export function FlowersScene({ content }: { content: FlowersContent }) {
               {content.shuffleLabel}
             </button>
 
-            {/* Nút bí mật đứng giữa hai nút kia. Trước đây nó nấp ở góc màn
-                hình, mờ 16% — kín tới mức chính người làm ra cũng không thấy.
-                Giờ vẫn khác hẳn hai nút còn lại để gợi tò mò, nhưng không còn
-                phải đi tìm. */}
+            {/* Dòng chữ bí mật, đứng giữa hai nút kia.
+             *
+             * Đã đi qua hai thái cực rồi mới về được chỗ này. Bản đầu nấp ở góc
+             * màn hình, mờ 16% — kín tới mức chính người làm ra cũng không tìm
+             * thấy. Bản sau viền vàng, nền vàng, quầng sáng vàng và một vệt
+             * sáng quét ngang — thành ra nó át cả bó hoa, mà một thứ gọi là
+             * "bí mật" thì không nên hét to như vậy.
+             *
+             * Chỗ ở giữa: bỏ hết viền, nền và quầng sáng, để nó là một dòng chữ
+             * nghiêng gạch chân chấm. Sức hút không đến từ độ sáng mà từ chỗ nó
+             * KHÁC hai cái nút bo tròn hai bên — mắt bắt sự khác biệt chứ không
+             * phải bắt độ chói. Còn lại giao cho một ngôi sao nhỏ nhấp nháy.
+             */}
             <motion.button
               type="button"
               onClick={() => setPhase("storm")}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 1.1 }}
-              whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.97 }}
-              className="group border-gold/60 bg-gold/10 text-gold hover:bg-gold/20 focus-visible:ring-gold/60 relative mt-4 inline-flex items-center gap-2.5 overflow-hidden rounded-full border px-6 py-3 text-[clamp(0.95rem,3.2vw,1.1rem)] tracking-wide italic shadow-[0_0_24px_-6px_var(--c-gold)] transition-colors outline-none focus-visible:ring-2"
+              className="text-gold/70 hover:text-gold focus-visible:ring-gold/50 decoration-gold/25 hover:decoration-gold/60 mt-5 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[clamp(0.9rem,3vw,1rem)] tracking-wide italic underline decoration-dotted underline-offset-[6px] transition-colors outline-none focus-visible:ring-2"
             >
-              {/* Vệt sáng quét ngang rất chậm, để mắt bắt được là có gì đó ở đây.
-                  Chạy bằng `x` chứ không phải `left`: `left` là thuộc tính bố
-                  cục, trình duyệt phải tính lại bố cục của nút ở MỌI khung hình,
-                  lặp vô hạn suốt lúc màn hoa đang mở. `x` là phép biến hình,
-                  card đồ hoạ lo trọn. */}
-              <span
-                aria-hidden
-                className="pointer-events-none absolute inset-0 overflow-hidden"
-              >
-                <motion.span
-                  className="absolute inset-y-0 left-0 w-full bg-[linear-gradient(90deg,transparent_38%,color-mix(in_srgb,var(--c-gold)_45%,transparent)_50%,transparent_62%)]"
-                  // Độ nghiêng phải giao cho motion chứ không dùng class
-                  // skew-x-*: motion ghi thẳng `transform` khi chạy `x`, ghi
-                  // đè luôn transform của Tailwind và vệt sáng mất hẳn nét xiên.
-                  style={{ skewX: -20 }}
-                  animate={{ x: ["-100%", "100%"] }}
-                  transition={{
-                    duration: 2.6,
-                    repeat: Infinity,
-                    repeatDelay: 3.4,
-                    ease: "easeInOut",
-                  }}
-                />
-              </span>
               <svg
                 viewBox="0 0 24 24"
                 fill="currentColor"
-                className="size-4 shrink-0"
+                className="twinkle size-3.5 shrink-0"
                 aria-hidden
               >
                 <path d="M12 2.6c1.3 3 4 5.7 7 7-3 1.3-5.7 4-7 7-1.3-3-4-5.7-7-7 3-1.3 5.7-4 7-7Z" />

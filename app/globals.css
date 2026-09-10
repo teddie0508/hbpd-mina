@@ -39,6 +39,25 @@
   animation: trail-drift 2.6s linear infinite;
 }
 
+/* Ngôi sao nhỏ cạnh dòng chữ bí mật, nhấp nháy rất chậm.
+   Cả sức hút của nút đó dồn vào MỘT ngôi sao 14px nhấp nháy, còn dòng chữ
+   thì đứng yên — như vậy mắt vẫn bắt được là có gì ở đây, mà không hét vào
+   mặt người xem như hồi cả cái nút phát sáng. */
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(0.85) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.12) rotate(24deg);
+  }
+}
+@utility twinkle {
+  animation: twinkle 3.4s ease-in-out infinite;
+}
+
 /* Gấu Teddie thở: trôi lên xuống và nghiêng qua lại rất chậm.
    Đây là thứ biến một tấm ảnh phẳng thành một nhân vật — mắt người đọc
    chuyển động nhẹ là "còn sống", đứng yên tuyệt đối là "hình dán".
