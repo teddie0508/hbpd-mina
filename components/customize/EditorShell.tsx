@@ -13,6 +13,7 @@ import type { SiteContent } from "@/lib/content/schema";
 import { cx } from "@/lib/cx";
 
 import { StorageProvider } from "./upload";
+import { VersionHistory } from "./VersionHistory";
 import {
   FlowersPanel,
   GeneralPanel,
@@ -235,6 +236,11 @@ export function EditorShell({
 
       <StorageProvider mode={storage}>
         <main className="mt-5">
+          {tab === "general" ? (
+            <div className="mb-5">
+              <VersionHistory onLoad={(khoiPhuc) => setDraft(khoiPhuc)} />
+            </div>
+          ) : null}
           {tab === "general" ? (
             <GeneralPanel content={draft} onChange={patch} />
           ) : null}

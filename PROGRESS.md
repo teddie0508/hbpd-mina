@@ -45,7 +45,7 @@ lib/
   {fonts,theme,auth,placeholder,bouquet,crop,text,cx}.ts
 ```
 
-## Ba mươi hai cái bẫy đã gặp, đừng dẫm lại
+## Ba mươi ba cái bẫy đã gặp, đừng dẫm lại
 
 1. **Không khai `--font-*` trong `@theme`.** Biến trong `@theme` nằm ở `:root` nên `var()` bị thay thế **ngay tại `:root`**; khối con đặt lại `--f-heading` sẽ vô tác dụng. Font phải khai bằng `@utility font-heading { font-family: var(--f-heading) }`.
 
@@ -113,6 +113,8 @@ lib/
 31. **Sự kiện `pause` bắn kèm `ended` làm chết cả danh sách nhạc.** Hết bài thì `onEnded` chuyển sang bài kế, còn khối nạp nguồn chỉ phát tiếp `if (playing)`. Nhưng có trình duyệt bắn luôn `pause` ngay sau `ended`, mà `onPause` lại đặt `playing` về false — trong cùng một lượt cập nhật, bài CÓ sang nhưng không phát, nhạc lặng hẳn từ bài thứ hai. Ý định phải ghi vào một ref (`tuChuyenBai`) ngay trong `onEnded`, trước khi đổi bài, chứ không được suy ra từ state. Cách kiểm mà không cần phát nhạc thật: thay `el.play`/`el.load` bằng hàm ghi lại rồi bắn tay `new Event("ended")` kèm `new Event("pause")` — chỉ thấy `load()` mà không thấy `play()` là dính lỗi.
 
 32. **Effect có `Math.random()` bên trong phải cho ra cùng một kết quả khi chạy lại.** Chế độ dev của React chạy mỗi effect hai lượt. Khối dựng thứ tự nghe dùng cờ `restored` để phân biệt lần đầu, nên lượt hai đi vào nhánh khác và `shuffled()` xáo đè lên kết quả lượt một — công nhớ thứ tự trong sessionStorage thành vô nghĩa, F5 phát nào cũng ra thứ tự khác. Chốt kết quả vào một ref rồi các lượt sau dựng lại từ đó thì chạy bao nhiêu lần cũng như một.
+
+33. **Giữ 3 bản lưu là quá ít để có đường lùi.** Mỗi lần bấm Lưu ghi ra một file mới rồi dọn bớt bản cũ. Để `KEEP_VERSIONS = 3` thì lỡ tay ghi đè một bản hỏng, chỉ cần lưu thêm ba lần nữa là bản tốt cuối cùng bị dọn mất. Nay giữ 20 — mỗi bản vài chục KB, gần như không tốn gì. Kèm theo là mục **Lịch sử bản lưu** ở tab Chung của /customize: nạp một bản cũ ra thì nó chỉ vào trình sửa như bản nháp, phải tự bấm Lưu mới thành bản hiện hành, nên xem nhầm cũng không mất gì. `readVersion()` nhận đường dẫn từ trình duyệt gửi lên nên phải chặn: đúng tiền tố, và khớp `VERSION_RE` hoặc đúng bằng đường dẫn của bản cũ nhất.
 
 Ngoài ra: `placehold.co` mặc định trả SVG mà bộ tối ưu ảnh của Next chặn SVG — URL ảnh giữ chỗ phải có đuôi `.png`.
 

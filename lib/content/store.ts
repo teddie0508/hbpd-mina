@@ -22,8 +22,14 @@ const LEGACY_BLOB_PATH = `${CONTENT_PREFIX}site.json`;
 /** `site-<13 chữ số mốc thời gian>-<6 ký tự ngẫu nhiên>.json` */
 const VERSION_RE = /^site-\d{13}-[0-9a-f]{6}\.json$/;
 
-/** Giữ lại vài bản gần nhất phòng khi cần xem lại, còn đâu dọn sạch. */
-const KEEP_VERSIONS = 3;
+/**
+ * Giữ lại bao nhiêu bản lưu gần nhất.
+ *
+ * Từng để 3, và đó là quá ít: lỡ tay lưu đè một bản hỏng thì chỉ cần lưu thêm
+ * ba lần nữa là bản tốt cuối cùng bị dọn mất, không còn đường lùi. Mỗi bản chỉ
+ * vài chục KB, giữ nhiều hơn gần như không tốn gì.
+ */
+const KEEP_VERSIONS = 20;
 
 const LOCAL_PATH = path.join(process.cwd(), ".data", "content.json");
 
@@ -92,6 +98,76 @@ function mergeIntoDefaults(saved: unknown): SiteContent {
   const merged = merge(base, saved) as SiteContent;
   merged.version = CONTENT_VERSION;
   return merged;
+}
+
+export interface ContentVersion {
+  /** Đường dẫn trong kho Blob, dùng làm định danh khi đọc lại. */
+  pathname: string;
+  /** Mốc lưu, đọc thẳng từ tên file nên không phụ thuộc metadata. */
+  savedAt: string;
+  sizeKb: number;
+  /** Bản đang được trang chính dùng. */
+  current: boolean;
+  /** Bản của thời kỳ ghi đè một đường dẫn cố định — cũ nhất, không bao giờ bị dọn. */
+  legacy: boolean;
+}
+
+/**
+ * Các bản đã lưu, mới nhất đứng đầu.
+ *
+ * Có để lỡ tay lưu đè một bản hỏng thì còn đường lùi. Bản `site.json` cũ luôn
+ * được liệt kê cuối danh sách: nó không nằm trong vòng dọn dẹp nên là cái phao
+ * cuối cùng, dù nội dung đã cũ.
+ */
+export async function listVersions(): Promise<ContentVersion[]> {
+  if (!usingBlob()) return [];
+
+  const { blobs } = await list({ prefix: CONTENT_PREFIX, limit: 100 });
+  const versions = sortedVersions(blobs);
+
+  const ra = versions.map((b, i) => ({
+    pathname: b.pathname,
+    // Tên file dạng site-<13 chữ số>-<6 ký tự>.json
+    savedAt: new Date(
+      Number(versionName(b.pathname).slice(5, 18)),
+    ).toISOString(),
+    sizeKb: Math.round(b.size / 1024),
+    current: i === 0,
+    legacy: false,
+  }));
+
+  const cu = blobs.find((b) => b.pathname === LEGACY_BLOB_PATH);
+  if (cu) {
+    ra.push({
+      pathname: cu.pathname,
+      savedAt: new Date(cu.uploadedAt).toISOString(),
+      sizeKb: Math.round(cu.size / 1024),
+      current: ra.length === 0,
+      legacy: true,
+    });
+  }
+
+  return ra;
+}
+
+/** Đọc lại một bản cũ. Chỉ đọc, KHÔNG ghi đè gì. */
+export async function readVersion(pathname: string): Promise<SiteContent> {
+  // Chặn đường dẫn lạ: hàm này nhận tham số từ trình duyệt gửi lên.
+  const ten = versionName(pathname);
+  if (
+    !pathname.startsWith(CONTENT_PREFIX) ||
+    (!VERSION_RE.test(ten) && pathname !== LEGACY_BLOB_PATH)
+  ) {
+    throw new Error("Đường dẫn bản lưu không hợp lệ.");
+  }
+
+  const { blobs } = await list({ prefix: CONTENT_PREFIX, limit: 100 });
+  const found = blobs.find((b) => b.pathname === pathname);
+  if (!found) throw new Error("Không tìm thấy bản lưu này nữa.");
+
+  const res = await fetch(found.url, { cache: "no-store" });
+  if (!res.ok) throw new Error("Không đọc được bản lưu.");
+  return mergeIntoDefaults((await res.json()) as unknown);
 }
 
 async function readRaw(): Promise<unknown | null> {
