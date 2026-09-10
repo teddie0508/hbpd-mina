@@ -45,7 +45,7 @@ lib/
   {fonts,theme,auth,placeholder,bouquet,crop,text,cx}.ts
 ```
 
-## Ba mươi cái bẫy đã gặp, đừng dẫm lại
+## Ba mươi hai cái bẫy đã gặp, đừng dẫm lại
 
 1. **Không khai `--font-*` trong `@theme`.** Biến trong `@theme` nằm ở `:root` nên `var()` bị thay thế **ngay tại `:root`**; khối con đặt lại `--f-heading` sẽ vô tác dụng. Font phải khai bằng `@utility font-heading { font-family: var(--f-heading) }`.
 
@@ -109,6 +109,10 @@ lib/
 29. **Nạp sẵn ảnh chỉ ăn khi `sizes` khớp TUYỆT ĐỐI.** Gallery ở /memories yêu cầu một URL khác hẳn ảnh trên khối (704px so với 200px), nên bấm sang tấm sau là trình duyệt mới bắt đầu tải — chờ cả giây. Cách chữa là nạp sẵn hai tấm liền kề, nhưng phải nạp bằng chính `<Image>` với ĐÚNG bộ `sizes` và `quality` của tấm đang xem: `next/image` sinh `srcset` theo `sizes`, lệch một ký tự là ra một đường dẫn khác, nạp sẵn một tệp rồi lại đi tải tệp khác. Cùng lý do đó, lớp ảnh nhỏ hiện tạm trong lúc chờ phải khai đúng `sizes` của ảnh trên khối thì mới trúng bộ nhớ đệm. Cả hai chuỗi nay là hằng số dùng chung, không chép tay. Cách kiểm mà không phụ thuộc môi trường: so thuộc tính `srcset` và `sizes` của hai thẻ, giống hệt nhau thì trình duyệt buộc phải chọn cùng một tệp. Đừng đọc `img.src` để đoán tệp nào đang tải — khi ảnh chưa tải xong, `currentSrc` rỗng còn `src` là bản to nhất mà next/image đặt làm dự phòng, nhìn vào tưởng đang tải nhầm bản 2560px.
 
 30. **Thứ gì nằm NGOÀI thẻ `<main>` thì không có biến font.** `fontVars()` được đặt trên chính thẻ `<main>` của mỗi màn, mà `<Teddie>` lại là anh em với thẻ đó chứ không nằm trong. Hệ quả là nó rơi vào giá trị dự phòng ở `:root`, mà dự phòng của `--f-accent` là `cursive` — font script mặc định của hệ điều hành. Trên Windows là Comic Sans, đọc tạm được nên tưởng không sao; trên iOS là Snell Roundhand, nét mảnh như sợi chỉ, cỡ 13px là chịu. Đúng kiểu lỗi chỉ lộ ra trên một hệ máy. Cách kiểm: đọc `getComputedStyle(el).fontFamily`, ra đúng một từ `cursive` hay `serif` là đang dùng dự phòng chứ không phải font đã chọn. Nhân đó gấu được cấp bộ font riêng thay vì mượn font từng trang — nó là một nhân vật xuyên suốt nên phải có một giọng nói, mà mượn font từng trang thì có trang rơi vào serif nét mảnh không dành cho cỡ chữ nhỏ.
+
+31. **Sự kiện `pause` bắn kèm `ended` làm chết cả danh sách nhạc.** Hết bài thì `onEnded` chuyển sang bài kế, còn khối nạp nguồn chỉ phát tiếp `if (playing)`. Nhưng có trình duyệt bắn luôn `pause` ngay sau `ended`, mà `onPause` lại đặt `playing` về false — trong cùng một lượt cập nhật, bài CÓ sang nhưng không phát, nhạc lặng hẳn từ bài thứ hai. Ý định phải ghi vào một ref (`tuChuyenBai`) ngay trong `onEnded`, trước khi đổi bài, chứ không được suy ra từ state. Cách kiểm mà không cần phát nhạc thật: thay `el.play`/`el.load` bằng hàm ghi lại rồi bắn tay `new Event("ended")` kèm `new Event("pause")` — chỉ thấy `load()` mà không thấy `play()` là dính lỗi.
+
+32. **Effect có `Math.random()` bên trong phải cho ra cùng một kết quả khi chạy lại.** Chế độ dev của React chạy mỗi effect hai lượt. Khối dựng thứ tự nghe dùng cờ `restored` để phân biệt lần đầu, nên lượt hai đi vào nhánh khác và `shuffled()` xáo đè lên kết quả lượt một — công nhớ thứ tự trong sessionStorage thành vô nghĩa, F5 phát nào cũng ra thứ tự khác. Chốt kết quả vào một ref rồi các lượt sau dựng lại từ đó thì chạy bao nhiêu lần cũng như một.
 
 Ngoài ra: `placehold.co` mặc định trả SVG mà bộ tối ưu ảnh của Next chặn SVG — URL ảnh giữ chỗ phải có đuôi `.png`.
 

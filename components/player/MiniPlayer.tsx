@@ -13,7 +13,6 @@ import {
   PauseIcon,
   PlayIcon,
   PrevIcon,
-  ShuffleIcon,
   VolumeIcon,
 } from "./icons";
 
@@ -129,16 +128,6 @@ export function MiniPlayer() {
                   onChange={(e) => audio.setVolume(Number(e.target.value))}
                   className="accent-gold hidden h-1 w-16 cursor-pointer sm:block"
                 />
-
-                {multi ? (
-                  <PlayerButton
-                    label={audio.shuffle ? "Tắt xáo bài" : "Xáo bài"}
-                    active={audio.shuffle}
-                    onClick={() => audio.setShuffle(!audio.shuffle)}
-                  >
-                    <ShuffleIcon />
-                  </PlayerButton>
-                ) : null}
 
                 {multi ? (
                   <PlayerButton

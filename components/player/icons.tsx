@@ -127,22 +127,3 @@ export const DiscIcon = ({ className = base }: IconProps) => (
     />
   </svg>
 );
-
-/** Hai đường chéo nhau kèm đầu mũi tên — dấu hiệu quen thuộc của chế độ xáo bài. */
-export const ShuffleIcon = ({ className = base }: IconProps) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.9"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-    aria-hidden
-  >
-    <path d="M3 6.5h3.4c1 0 2 .5 2.6 1.4l5 7.2c.6.9 1.6 1.4 2.6 1.4H21" />
-    <path d="M3 17.5h3.4c1 0 2-.5 2.6-1.4l5-7.2c.6-.9 1.6-1.4 2.6-1.4H21" />
-    <path d="m18.2 4.8 2.8 2.7-2.8 2.7" />
-    <path d="m18.2 13.8 2.8 2.7-2.8 2.7" />
-  </svg>
-);

@@ -35,7 +35,6 @@ interface AudioApi {
   select: (index: number) => void;
   setVolume: (v: number) => void;
   toggleMute: () => void;
-  setShuffle: (on: boolean) => void;
 }
 
 const AudioContext = createContext<AudioApi | null>(null);
@@ -78,6 +77,17 @@ export function AudioProvider({
   const [unlocked, setUnlocked] = useState(false);
   const [volume, setVolumeState] = useState(music.volume);
   const [muted, setMuted] = useState(false);
+  /**
+   * Đang tự chuyển bài vì bài trước vừa hết.
+   *
+   * Phải là ref chứ không được trông vào state `playing`: có trình duyệt bắn
+   * kèm sự kiện `pause` ngay sau `ended`, mà `onPause` thì đặt `playing` về
+   * false. Thế là trong cùng một lượt cập nhật, bài có sang nhưng khối nạp
+   * nguồn lại thấy `playing === false` nên không phát tiếp — danh sách nhạc
+   * lặng luôn từ bài thứ hai, đúng kiểu "hết bài đầu là im".
+   */
+  const tuChuyenBai = useRef(false);
+
   /** Lần tải trang này có đang dở một bài không, để thử phát tiếp. */
   const shouldResume = useRef(false);
   /** Nghe dở tới giây thứ mấy, để phát tiếp đúng chỗ chứ không quay về đầu. */
@@ -90,6 +100,15 @@ export function AudioProvider({
   /** Đổi khi bạn thêm/bớt/đổi thứ tự bài ở /customize. */
   const trackSig = music.tracks.map((t) => t.id).join("|");
   const restored = useRef(false);
+  /**
+   * Thứ tự nghe đã chốt cho TAB này, lưu bằng danh sách ID.
+   *
+   * sessionStorage sống theo tab: mở tab mới là trống trơn nên xáo lại từ
+   * đầu, còn tải lại trang trong tab cũ thì đọc được thứ tự cũ và giữ nguyên.
+   * Chuyển trang trong tab thì AudioProvider nằm ở layout nên không dựng lại,
+   * nhạc chạy liền mạch.
+   */
+  const thuTuCuaTab = useRef<string[] | null>(null);
 
   // Dựng thứ tự nghe, và khôi phục bài dở sau khi tải lại trang.
   //
@@ -100,7 +119,18 @@ export function AudioProvider({
   // null và cả trình phát biến mất. Giờ càng phải theo ID: bật xáo là thứ tự
   // chẳng còn liên quan gì tới danh sách đã soạn nữa.
   useEffect(() => {
-    const order = music.shuffle ? shuffled(music.tracks) : music.tracks;
+    const theoId = new Map(music.tracks.map((t) => [t.id, t]));
+
+    /** Dựng lại thứ tự từ danh sách ID, chỉ nhận khi khớp trọn vẹn. */
+    const dungLaiTu = (ids: string[] | null): Track[] | null => {
+      if (!ids || ids.length !== music.tracks.length) return null;
+      const out = ids
+        .map((id) => theoId.get(id))
+        .filter((t): t is Track => Boolean(t));
+      // Lệch một bài nghĩa là danh sách vừa bị sửa ở /customize — lúc đó phải
+      // dựng thứ tự mới chứ không cố ghép vào cái cũ.
+      return out.length === music.tracks.length ? out : null;
+    };
 
     // Lần đầu thì lấy bài dở trong sessionStorage; những lần sau (danh sách
     // vừa đổi ở /customize) thì giữ nguyên bài đang nghe.
@@ -114,11 +144,20 @@ export function AudioProvider({
         if (raw) {
           const saved = JSON.parse(raw) as {
             trackId?: string;
+            order?: string[];
+            shuffle?: boolean;
             volume?: number;
             muted?: boolean;
             playing?: boolean;
             time?: number;
           };
+
+          // Chỉ nhận lại thứ tự cũ khi tuỳ chọn xáo bài không đổi. Bật/tắt ở
+          // /customize thì lần mở kế tiếp phải dựng lại thứ tự mới.
+          if (Array.isArray(saved.order) && saved.shuffle === music.shuffle) {
+            thuTuCuaTab.current = saved.order;
+          }
+
           if (typeof saved.trackId === "string") wantedId = saved.trackId;
           if (typeof saved.volume === "number") setVolumeState(saved.volume);
           if (typeof saved.muted === "boolean") setMuted(saved.muted);
@@ -129,6 +168,16 @@ export function AudioProvider({
         // sessionStorage bị chặn (chế độ riêng tư) — bỏ qua, không ảnh hưởng gì.
       }
     }
+
+    // Thứ tự đã chốt cho tab này. Chốt vào ref chứ không tính lại mỗi lượt:
+    // effect này chạy hai lần ở chế độ dev, mà `shuffled()` thì lần nào cũng
+    // ra một kết quả khác — tính lại là lần chạy thứ hai xáo đè lên lần đầu,
+    // và cả công nhớ thứ tự thành vô nghĩa.
+    let order = dungLaiTu(thuTuCuaTab.current);
+    if (!order) {
+      order = music.shuffle ? shuffled(music.tracks) : music.tracks;
+    }
+    thuTuCuaTab.current = order.map((t) => t.id);
 
     const found = wantedId ? order.findIndex((t) => t.id === wantedId) : -1;
 
@@ -154,6 +203,10 @@ export function AudioProvider({
         STATE_KEY,
         JSON.stringify({
           trackId: current?.id,
+          // Nhớ luôn thứ tự đang dùng, để tải lại trang trong cùng tab thì
+          // không bị xáo lại từ đầu.
+          order: tracks.map((t) => t.id),
+          shuffle: music.shuffle,
           volume,
           muted,
           playing,
@@ -163,7 +216,7 @@ export function AudioProvider({
     } catch {
       /* bỏ qua */
     }
-  }, [current?.id, volume, muted, playing]);
+  }, [current?.id, tracks, music.shuffle, volume, muted, playing]);
 
   useEffect(() => {
     persist();
@@ -281,29 +334,6 @@ export function AudioProvider({
     [tracks.length],
   );
 
-  /**
-   * Bật/tắt xáo giữa chừng mà không làm đứt bài đang nghe.
-   *
-   * Bật: dựng thứ tự mới rồi kéo bài đang nghe lên đầu.
-   * Tắt: trả về đúng thứ tự đã soạn, con trỏ nhảy tới chỗ của bài đó.
-   * Cả hai đường đều giữ nguyên `current`, nên khối nạp nguồn bên dưới nhận ra
-   * bài không đổi và không nạp lại — nhạc chạy liền mạch.
-   */
-  const setShuffle = useCallback(
-    (on: boolean) => {
-      const cur = currentRef.current;
-      const base = on ? shuffled(music.tracks) : music.tracks;
-      const order =
-        on && cur ? [cur, ...base.filter((t) => t.id !== cur.id)] : base;
-
-      setShuffleState(on);
-      setTracks(order);
-      const at = cur ? order.findIndex((t) => t.id === cur.id) : -1;
-      setIndex(at >= 0 ? at : 0);
-    },
-    [music.tracks],
-  );
-
   // Đổi bài: nạp nguồn mới rồi phát tiếp nếu đang trong trạng thái phát.
   //
   // Bám theo ID của bài chứ không bám theo vị trí. Xáo thứ tự làm vị trí đổi
@@ -319,8 +349,13 @@ export function AudioProvider({
     loadedId.current = current.id;
     if (first) return;
 
+    // Phát tiếp khi ĐANG phát, hoặc khi đây là cú tự chuyển bài lúc bài trước
+    // vừa hết — hai chuyện đó không phải một, xem chú thích ở `tuChuyenBai`.
+    const phaiPhatTiep = playing || tuChuyenBai.current;
+    tuChuyenBai.current = false;
+
     el.load();
-    if (playing) playCurrent();
+    if (phaiPhatTiep) playCurrent();
     // Chỉ chạy khi đổi bài, không chạy khi bấm tạm dừng.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current?.id]);
@@ -344,7 +379,6 @@ export function AudioProvider({
       select,
       setVolume: setVolumeState,
       toggleMute: () => setMuted((m) => !m),
-      setShuffle,
     }),
     [
       tracks,
@@ -361,7 +395,6 @@ export function AudioProvider({
       next,
       prev,
       select,
-      setShuffle,
     ],
   );
 
@@ -382,6 +415,9 @@ export function AudioProvider({
             setPlaying(false);
             return;
           }
+          // Ghi rõ ý định TRƯỚC khi đổi bài. Xem chú thích ở `tuChuyenBai`:
+          // không thể trông vào state `playing` ở thời điểm này.
+          tuChuyenBai.current = true;
           next();
         }}
         onPlay={() => setPlaying(true)}
