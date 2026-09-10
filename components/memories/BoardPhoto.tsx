@@ -2,27 +2,26 @@
 
 import { motion, useReducedMotion } from "motion/react";
 import Image from "next/image";
-import { useEffect, useState } from "react";
 
 import { ASPECT_CSS, type ImageAsset } from "@/lib/content/schema";
-
-/** Lật xem mặt sau bao lâu thì tự úp lại. Đủ để đọc một dòng ghi chú ngắn. */
-const FLIP_BACK_MS = 3000;
 
 /**
  * Một tấm ảnh trên khối kỷ niệm.
  *
- * Chia làm bốn lớp riêng biệt, cố ý không gộp:
+ * Chia làm ba lớp riêng biệt, cố ý không gộp:
  *  - lớp ngoài cùng (do khối cha dựng) lo vị trí bằng class Tailwind
  *  - lớp hiện dần, có delay so le giữa các tấm
  *  - lớp nghiêng theo con trỏ và phóng khi rê chuột, KHÔNG delay
- *  - lớp trong cùng lo lật mặt sau
  *
  * Hai lý do phải tách:
  *  - `motion` ghi thẳng `transform` vào style, gộp lại là cái sau xoá cái trước.
  *  - `transition` áp cho MỌI chuyển động của cùng một phần tử. Gộp lớp hiện
  *    dần với lớp hover thì cái delay so le lúc vào trang dính luôn vào hover:
  *    rê chuột vào tấm cuối phải đợi hơn nửa giây nó mới chịu phóng.
+ *
+ * Trước đây tấm ảnh lật được để xem ghi chú ở mặt sau. Bỏ rồi: ở cỡ chừng
+ * 150px thì cả ảnh lẫn chữ đều bé quá. Giờ chạm vào là mở gallery phủ kín màn
+ * hình, ghi chú nằm ngay dưới ảnh.
  */
 export function BoardPhoto({
   photo,
@@ -30,6 +29,7 @@ export function BoardPhoto({
   delay,
   tiltX,
   tiltY,
+  onOpen,
 }: {
   photo: ImageAsset;
   /** Độ nghiêng cố định của tấm ảnh, tính bằng độ. */
@@ -38,23 +38,10 @@ export function BoardPhoto({
   /** Con trỏ đang lệch bao nhiêu so với tâm khối, khoảng -1 đến 1. */
   tiltX: number;
   tiltY: number;
+  onOpen: () => void;
 }) {
-  const [flipped, setFlipped] = useState(false);
   const reduced = useReducedMotion();
-
-  const note = photo.note?.trim();
-  const canFlip = Boolean(note);
-
-  // Đọc xong dòng ghi chú thì tự úp lại, khỏi phải bấm lần nữa.
-  //
-  // Hẹn giờ gắn vào chính trạng thái đang lật, không gắn vào cú bấm: bấm lật
-  // lại bằng tay giữa chừng thì effect dọn luôn cái hẹn giờ cũ, không còn cái
-  // nào lơ lửng để lát nữa úp nhầm tấm đang mở.
-  useEffect(() => {
-    if (!flipped) return;
-    const id = window.setTimeout(() => setFlipped(false), FLIP_BACK_MS);
-    return () => window.clearTimeout(id);
-  }, [flipped]);
+  const hasNote = Boolean(photo.note?.trim());
 
   return (
     <motion.div
@@ -83,72 +70,54 @@ export function BoardPhoto({
           scale: { duration: 0.22, ease: [0.22, 1, 0.36, 1] },
         }}
       >
-        <motion.div
-          className="relative"
-          style={{ transformStyle: "preserve-3d" }}
-          animate={{ rotateY: flipped ? 180 : 0 }}
-          transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
-          onClick={() => canFlip && setFlipped((f) => !f)}
-          role={canFlip ? "button" : undefined}
-          tabIndex={canFlip ? 0 : undefined}
-          // Nút bật/tắt thì phải khai aria-pressed, không thì trình đọc màn
-          // hình chỉ đọc được "nút", không biết ảnh đang ngửa hay đang úp.
-          aria-pressed={canFlip ? flipped : undefined}
-          aria-label={canFlip ? `Lật ảnh: ${photo.alt}` : undefined}
-          onKeyDown={(e) => {
-            if (!canFlip) return;
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              setFlipped((f) => !f);
-            }
-          }}
+        <button
+          type="button"
+          onClick={onOpen}
+          aria-label={`Xem ảnh: ${photo.alt}`}
+          className="group bg-paper focus-visible:ring-gold/70 relative block w-full cursor-zoom-in rounded-[2px] p-1.5 shadow-[0_8px_22px_-6px_rgba(0,0,0,0.6)] outline-none focus-visible:ring-2 md:p-[6%]"
         >
-          {/* Mặt trước */}
           <div
-            className="bg-paper rounded-[2px] p-1.5 shadow-[0_8px_22px_-6px_rgba(0,0,0,0.6)] md:p-[6%]"
-            style={{ backfaceVisibility: "hidden" }}
+            className="relative w-full overflow-hidden"
+            style={{ aspectRatio: ASPECT_CSS[photo.aspect] }}
           >
-            <div
-              className="relative w-full overflow-hidden"
-              style={{ aspectRatio: ASPECT_CSS[photo.aspect] }}
-            >
-              <Image
-                src={photo.url}
-                alt={photo.alt}
-                fill
-                // Khai đúng bề ngang THẬT lúc vẽ ra, nếu không trình duyệt tải
-                // bản nhỏ rồi kéo giãn và công phóng to khối thành công cốc.
-                // 17% của khối: 1024px → 174, 1152px → 196, 1344px → 228.
-                sizes="(max-width: 768px) 44vw, (max-width: 1279px) 200px, 232px"
-                quality={90}
-                className="object-cover"
-              />
-            </div>
+            <Image
+              src={photo.url}
+              alt={photo.alt}
+              fill
+              sizes="(max-width: 768px) 44vw, 200px"
+              quality={90}
+              className="object-cover"
+            />
 
-            {/* Góc gấp nhỏ, dấu hiệu duy nhất cho biết tấm này lật được. */}
-            {canFlip ? (
-              <span
-                aria-hidden
-                className="border-b-gold/70 absolute right-0 bottom-0 size-0 border-r-[14px] border-b-[14px] border-r-transparent"
-              />
-            ) : null}
+            {/* Kính lúp hiện khi rê chuột — dấu hiệu duy nhất cho biết bấm
+                được. Điện thoại không có trạng thái rê chuột, nên ở đó việc
+                mách nước giao cho câu thoại của gấu Teddie. */}
+            <span
+              aria-hidden
+              className="bg-ink/35 pointer-events-none absolute inset-0 grid place-items-center opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                className="text-cream size-1/4 min-w-4 drop-shadow"
+              >
+                <circle cx="11" cy="11" r="6.5" />
+                <path d="m16 16 4.5 4.5M11 8.5v5M8.5 11h5" />
+              </svg>
+            </span>
           </div>
 
-          {/* Mặt sau: xoay sẵn 180° để khi lật xong nó quay đúng chiều. */}
-          {canFlip ? (
-            <div
-              className="paper absolute inset-0 grid place-items-center rounded-[2px] px-2 shadow-[0_8px_22px_-6px_rgba(0,0,0,0.6)]"
-              style={{
-                backfaceVisibility: "hidden",
-                transform: "rotateY(180deg)",
-              }}
-            >
-              <p className="font-accent text-ink/85 text-center text-[clamp(0.6rem,1.1vw,0.85rem)] leading-snug text-balance">
-                {note}
-              </p>
-            </div>
+          {/* Góc gấp nhỏ: tấm này có ghi chú kèm theo. */}
+          {hasNote ? (
+            <span
+              aria-hidden
+              className="border-b-gold/70 absolute right-0 bottom-0 size-0 border-r-[14px] border-b-[14px] border-r-transparent"
+            />
           ) : null}
-        </motion.div>
+        </button>
       </motion.div>
     </motion.div>
   );

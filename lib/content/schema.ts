@@ -324,11 +324,10 @@ export const SLOT_MAX_EDGE: Record<ImageSlot, number> = {
   // Polaroid rộng nhất khoảng 272 → 544 là đủ, để dư cho thoải mái.
   messagePhoto: 1400,
   finalePolaroid: 1400,
-  // Ảnh vuông trong khối: rộng nhất 232 CSS px, màn Retina 3x cần ~700.
-  // Để 1200 cho dư, vì đây là chỗ hay đặt ảnh chụp màn hình tin nhắn — loại
-  // ảnh mà mất nét một chút là đọc không ra chữ.
+  // Ảnh vuông nhỏ trong khối và trên dải phim.
+  // Bấm vào là xem phóng to tới 704 CSS px, màn Retina 2x cần ~1400.
   // Ảnh tải lên từ trước vẫn giữ nguyên; muốn nét hơn thì tải lại tấm đó.
-  boardPhoto: 1200,
+  boardPhoto: 1600,
   filmstrip: 600,
   hubIcon: 512,
   // Gấu vẽ rộng nhất 128 CSS px -> 512 là đủ cho màn Retina, để dư một bậc.

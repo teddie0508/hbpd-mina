@@ -552,7 +552,7 @@ export function MemoriesPanel({
             max={MAX_BOARD_PHOTOS}
             items={board.photos}
             onChange={(photos) => patchBoard(index, { photos })}
-            noteHint="Ghi chú mặt sau, vd: 19/08 — lần đầu gặp em"
+            noteHint="Ghi chú hiện dưới ảnh lúc phóng to, vd: 19/08 — lần đầu gặp em"
           />
         </SectionCard>
       ))}

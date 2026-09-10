@@ -168,9 +168,9 @@ export const DEFAULT_CONTENT: SiteContent = {
     },
     memories: {
       image: null,
-      // Câu này còn làm một việc nữa: không có ai chỉ thì chẳng ai biết ảnh
-      // lật được mặt sau.
-      lines: ["Bấm thử vào ảnh xem, mặt sau có chữ đấy."],
+      // Câu này còn làm một việc nữa: không có ai chỉ thì chẳng ai biết bấm
+      // vào ảnh là xem to được.
+      lines: ["Bấm vào ảnh đi, xem to hơn được đấy."],
     },
     flowers: {
       image: null,

@@ -60,21 +60,17 @@ export function MemoriesScene({ content }: { content: MemoriesContent }) {
             </div>
           </Reveal>
         </section>
-      </div>
 
-      {/* Khối ảnh cố ý rộng hơn phần chữ.
-          Ảnh rải trên khối chỉ chiếm 12–17% bề ngang khối, nên bề ngang khối
-          là thứ quyết định từng tấm to hay nhỏ — kẹp chung max-w-5xl với phần
-          chữ thì mỗi tấm chỉ còn khoảng 150px, ảnh chụp màn hình tin nhắn đọc
-          không nổi. Phần chữ vẫn giữ nguyên bề ngang cũ cho dễ đọc. */}
-      <div className="relative z-10 mx-auto mt-16 w-full max-w-5xl space-y-10 sm:mt-24 sm:space-y-14 lg:max-w-6xl xl:max-w-[84rem]">
-        {content.boards.map((board) => (
-          <MemoryBoard key={board.id} board={board} />
-        ))}
-      </div>
+        {/* Các khối ảnh, mỗi khối một ảnh nền riêng. */}
+        <div className="mt-16 space-y-10 sm:mt-24 sm:space-y-14">
+          {content.boards.map((board) => (
+            <MemoryBoard key={board.id} board={board} />
+          ))}
+        </div>
 
-      <div className="relative z-10 mx-auto mt-16 w-full max-w-5xl sm:mt-20">
-        <BackLink />
+        <div className="mt-16 sm:mt-20">
+          <BackLink />
+        </div>
       </div>
     </main>
   );

@@ -7,20 +7,21 @@ import { useRef, useState } from "react";
 import type { MemoryBoard as Board } from "@/lib/content/schema";
 
 import { BoardPhoto } from "./BoardPhoto";
+import { PhotoGallery } from "./PhotoGallery";
 
 /**
  * Vị trí từng tấm ảnh trên khối, tính theo % chiều rộng/cao của khối.
  * Chỉ dùng từ breakpoint md trở lên; màn hẹp rơi về lưới 2 cột cho dễ nhìn.
  */
 const SPOTS = [
-  { x: 20, y: 24, w: 17, rot: -6 },
-  { x: 47, y: 15, w: 16, rot: 4 },
-  { x: 76, y: 22, w: 17, rot: 5 },
-  { x: 13, y: 66, w: 16, rot: -4 },
-  { x: 47, y: 72, w: 17, rot: 3 },
-  { x: 80, y: 64, w: 16, rot: -5 },
-  { x: 32, y: 45, w: 14, rot: 7 },
-  { x: 63, y: 45, w: 14, rot: -7 },
+  { x: 20, y: 24, w: 15, rot: -6 },
+  { x: 47, y: 15, w: 14, rot: 4 },
+  { x: 76, y: 22, w: 15, rot: 5 },
+  { x: 13, y: 66, w: 14, rot: -4 },
+  { x: 47, y: 72, w: 15, rot: 3 },
+  { x: 80, y: 64, w: 14, rot: -5 },
+  { x: 32, y: 45, w: 12, rot: 7 },
+  { x: 63, y: 45, w: 12, rot: -7 },
 ];
 
 /**
@@ -49,6 +50,9 @@ export function MemoryBoard({ board }: { board: Board }) {
   // Vị trí con trỏ so với tâm khối, quy về khoảng -1..1.
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const boxRef = useRef<HTMLDivElement>(null);
+
+  /** Đang xem tấm thứ mấy ở gallery. null = chưa mở. */
+  const [openAt, setOpenAt] = useState<number | null>(null);
 
   // Chỉ theo con trỏ trên thiết bị có chuột thật. Trên điện thoại, sự kiện
   // pointer sinh ra từ cú chạm sẽ làm ảnh giật một cái rồi đứng im.
@@ -92,7 +96,7 @@ export function MemoryBoard({ board }: { board: Board }) {
             src={board.background.url}
             alt=""
             fill
-            sizes="(max-width: 768px) 100vw, 1400px"
+            sizes="(max-width: 768px) 100vw, 1100px"
             quality={90}
             className="object-cover"
             aria-hidden
@@ -195,12 +199,22 @@ export function MemoryBoard({ board }: { board: Board }) {
                   delay={0.2 + i * 0.08}
                   tiltX={tilt.x}
                   tiltY={tilt.y}
+                  onOpen={() => setOpenAt(i)}
                 />
               </div>
             );
           })}
         </div>
       </div>
+
+      {/* Xem ảnh phóng to. Tự dựng ra <body> bằng portal, nên đặt ở đây hay
+          chỗ nào khác trong cây cũng không đổi kết quả. */}
+      <PhotoGallery
+        photos={photos}
+        index={openAt}
+        onIndex={setOpenAt}
+        onClose={() => setOpenAt(null)}
+      />
     </motion.section>
   );
 }

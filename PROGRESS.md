@@ -129,6 +129,8 @@ el.textContent = `
 
 - **Đừng lồng nhiều `setTimeout` trong một script khi đo thời gian ở pane.** Tab ẩn thì trình duyệt bóp các hẹn giờ lồng nhau xuống tối thiểu một giây, có lúc còn hơn — xin 250ms mà nhận về cả giây. Đo tính năng "sau 3 giây tự lật lại" kiểu `await 1500; await 2000` rồi ghi nhãn "sau 3,5s" là tự lừa mình: thực tế đã trôi qua bao lâu thì không biết. Phải đo bằng `performance.now()` và chỉ dùng MỘT phép chờ mỗi lần gọi.
 
+- **Script thay chuỗi in ra "ok" KHÔNG có nghĩa là nó đã thay được gì.** Chèn `<PhotoGallery>` vào JSX bằng một đoạn node replace, script chạy xong báo ok, mà mẫu tìm không khớp nên phần JSX không hề được chèn — tôi lại chỉ grep dòng `import` nên tưởng xong. Grep đúng THỨ mình vừa sửa, không grep thứ đi kèm nó.
+
 ## Việc còn lại
 
 - [ ] **Phase 7** — chạy thử thật trên Safari macOS + iOS: animation mở phong bì, mưa cánh hoa ở 120Hz, nhạc bật đúng lúc chạm, xoay ngang
