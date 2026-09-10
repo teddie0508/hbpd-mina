@@ -116,7 +116,10 @@ export function BoardPhoto({
                 src={photo.url}
                 alt={photo.alt}
                 fill
-                sizes="(max-width: 768px) 44vw, 200px"
+                // Khai đúng bề ngang THẬT lúc vẽ ra, nếu không trình duyệt tải
+                // bản nhỏ rồi kéo giãn và công phóng to khối thành công cốc.
+                // 17% của khối: 1024px → 174, 1152px → 196, 1344px → 228.
+                sizes="(max-width: 768px) 44vw, (max-width: 1279px) 200px, 232px"
                 quality={90}
                 className="object-cover"
               />

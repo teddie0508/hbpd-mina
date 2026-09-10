@@ -13,14 +13,14 @@ import { BoardPhoto } from "./BoardPhoto";
  * Chỉ dùng từ breakpoint md trở lên; màn hẹp rơi về lưới 2 cột cho dễ nhìn.
  */
 const SPOTS = [
-  { x: 20, y: 24, w: 15, rot: -6 },
-  { x: 47, y: 15, w: 14, rot: 4 },
-  { x: 76, y: 22, w: 15, rot: 5 },
-  { x: 13, y: 66, w: 14, rot: -4 },
-  { x: 47, y: 72, w: 15, rot: 3 },
-  { x: 80, y: 64, w: 14, rot: -5 },
-  { x: 32, y: 45, w: 12, rot: 7 },
-  { x: 63, y: 45, w: 12, rot: -7 },
+  { x: 20, y: 24, w: 17, rot: -6 },
+  { x: 47, y: 15, w: 16, rot: 4 },
+  { x: 76, y: 22, w: 17, rot: 5 },
+  { x: 13, y: 66, w: 16, rot: -4 },
+  { x: 47, y: 72, w: 17, rot: 3 },
+  { x: 80, y: 64, w: 16, rot: -5 },
+  { x: 32, y: 45, w: 14, rot: 7 },
+  { x: 63, y: 45, w: 14, rot: -7 },
 ];
 
 /**
@@ -92,7 +92,7 @@ export function MemoryBoard({ board }: { board: Board }) {
             src={board.background.url}
             alt=""
             fill
-            sizes="(max-width: 768px) 100vw, 1100px"
+            sizes="(max-width: 768px) 100vw, 1400px"
             quality={90}
             className="object-cover"
             aria-hidden
