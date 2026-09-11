@@ -159,6 +159,84 @@ export function GeneralPanel({
             onChange={(subtitle) => patchCountdown({ subtitle })}
           />
         </Field>
+
+        <div className="border-mist/15 space-y-4 rounded-xl border border-dashed p-4">
+          <Toggle
+            checked={content.countdown.finalCountdown}
+            onChange={(finalCountdown) => patchCountdown({ finalCountdown })}
+            label="10 giây cuối: hiện một con số lớn giữa màn hình"
+          />
+          <Field
+            label="Dòng hiện đúng lúc về 0"
+            hint="Đứng một nhịp khoảng 2 giây rồi mới ra phong bì. Chỉ hiện khi bật 10 giây cuối. Thử ngay bằng Diễn tập 0h ở trên (chọn 15 giây)."
+          >
+            <TextInput
+              value={content.countdown.unlockedNote}
+              onChange={(unlockedNote) => patchCountdown({ unlockedNote })}
+            />
+          </Field>
+        </div>
+
+        <div className="border-mist/15 space-y-4 rounded-xl border border-dashed p-4">
+          <Toggle
+            checked={content.countdown.reminder.enabled}
+            onChange={(enabled) =>
+              patchCountdown({
+                reminder: { ...content.countdown.reminder, enabled },
+              })
+            }
+            label="Nút nhắc lịch ở màn đếm ngược"
+          />
+          {content.countdown.reminder.enabled ? (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Chữ trên nút">
+                  <TextInput
+                    value={content.countdown.reminder.label}
+                    onChange={(label) =>
+                      patchCountdown({
+                        reminder: { ...content.countdown.reminder, label },
+                      })
+                    }
+                  />
+                </Field>
+                <Field
+                  label="Nhắc trước giờ mở (phút)"
+                  hint="Chuông reo lúc này. Nút tự ẩn khi đã qua giờ nhắc."
+                >
+                  <TextInput
+                    type="number"
+                    value={String(content.countdown.reminder.leadMinutes)}
+                    onChange={(raw) => {
+                      const n = Math.round(Number(raw));
+                      patchCountdown({
+                        reminder: {
+                          ...content.countdown.reminder,
+                          leadMinutes: Number.isFinite(n)
+                            ? Math.min(180, Math.max(0, n))
+                            : 5,
+                        },
+                      });
+                    }}
+                  />
+                </Field>
+              </div>
+              <Field
+                label="Tên sự kiện trong lịch"
+                hint="Hiện trong lịch và trong thông báo trên màn hình khoá. Ai có link cũng thêm được, nên đừng viết gì lộ bất ngờ."
+              >
+                <TextInput
+                  value={content.countdown.reminder.eventTitle}
+                  onChange={(eventTitle) =>
+                    patchCountdown({
+                      reminder: { ...content.countdown.reminder, eventTitle },
+                    })
+                  }
+                />
+              </Field>
+            </>
+          ) : null}
+        </div>
         <TypographyPicker
           fonts={content.countdown.fonts}
           type={content.countdown.typography}
@@ -214,6 +292,12 @@ export function LandingPanel({
           onChange={(subline) => onChange({ subline })}
         />
       </Field>
+
+      <Toggle
+        checked={value.envelopeSound}
+        onChange={(envelopeSound) => onChange({ envelopeSound })}
+        label="Tiếng giấy sột soạt khi phong bì mở"
+      />
 
       <PassphraseFields
         value={value.passphrase}

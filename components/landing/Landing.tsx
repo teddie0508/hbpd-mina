@@ -10,6 +10,7 @@ import { Ambience } from "@/components/ui/Ambience";
 import { WarmFlash } from "@/components/ui/WarmFlash";
 import type { LandingData, WaitingTeddiePick } from "@/lib/content/schema";
 import { noteOnce } from "@/lib/moments";
+import { playPaperSound, primePaperSound } from "@/lib/paper-sound";
 import { fontVars } from "@/lib/theme";
 
 import { Countdown } from "./Countdown";
@@ -46,17 +47,21 @@ export function Landing({
   // không bao giờ về, và phong bì không được phép khoá cứng vì chuyện đó.
   const [hetChoNhac, setHetChoNhac] = useState(false);
 
-  const unlock = useCallback(() => {
-    setLocked(false);
-    // Lúc trang còn khoá, máy chủ cố ý KHÔNG gửi danh sách nhạc xuống (xem
-    // app/(experience)/layout.tsx). Tới giờ mở thì xin lại dữ liệu từ máy chủ
-    // — lúc này máy chủ đã thấy hết khoá nên gửi đủ. Chỉ gọi đúng một lần.
-    if (!daLamMoi.current) {
-      daLamMoi.current = true;
-      router.refresh();
-      window.setTimeout(() => setHetChoNhac(true), 5000);
-    }
+  // Lúc trang còn khoá, máy chủ cố ý KHÔNG gửi danh sách nhạc xuống (xem
+  // app/(experience)/layout.tsx). Về 0 là xin lại dữ liệu từ máy chủ ngay —
+  // lúc này máy chủ đã thấy hết khoá nên gửi đủ — trong khi dòng "Đến giờ
+  // rồi." còn đang hiện, để tới lúc phong bì ra thì nhạc đã về. Chỉ gọi một lần.
+  const xinLaiDuLieu = useCallback(() => {
+    if (daLamMoi.current) return;
+    daLamMoi.current = true;
+    router.refresh();
+    window.setTimeout(() => setHetChoNhac(true), 5000);
   }, [router]);
+
+  const unlock = useCallback(() => {
+    xinLaiDuLieu();
+    setLocked(false);
+  }, [xinLaiDuLieu]);
 
   // Nạp sẵn /hub ngay từ lúc vào trang. Đợi tới lúc chạm mới nạp thì
   // mạng yếu sẽ hụt một nhịp ngay giữa chuyển cảnh.
@@ -77,6 +82,10 @@ export function Landing({
   const handleRequestOpen = useCallback(() => {
     if (choNhac) return;
 
+    // Đánh thức âm thanh ngay trong cú chạm, dù tiếng giấy chỉ vang lúc phong
+    // bì thật sự mở — có thể là sau lớp hỏi tên, khi cú chạm đã hết hiệu lực.
+    if (data.landing.envelopeSound) primePaperSound();
+
     // Nhạc phải bật NGAY ở đây, kể cả khi còn phải hỏi tên.
     //
     // iOS chỉ cho phát tiếng từ bên trong một cử chỉ thật của người dùng, mà
@@ -91,7 +100,13 @@ export function Landing({
       return;
     }
     setOpening(true);
-  }, [audio, choNhac, data.startOnEnvelopeOpen, needName]);
+  }, [
+    audio,
+    choNhac,
+    data.landing.envelopeSound,
+    data.startOnEnvelopeOpen,
+    needName,
+  ]);
 
   // Trả lời đúng: đóng panel rồi mở phong bì luôn, không bắt chạm lại lần nữa.
   const handlePassed = useCallback(() => {
@@ -104,8 +119,10 @@ export function Landing({
 
   // Nhật ký: phong bì bắt đầu mở — dù đi qua lớp hỏi tên hay không.
   useEffect(() => {
-    if (opening) noteOnce("opened");
-  }, [opening]);
+    if (!opening) return;
+    noteOnce("opened");
+    if (data.landing.envelopeSound) playPaperSound();
+  }, [opening, data.landing.envelopeSound]);
 
   return (
     <main
@@ -122,6 +139,7 @@ export function Landing({
                 content={data.countdown}
                 targetIso={data.countdown.revealAt}
                 serverNow={serverNow}
+                onZero={xinLaiDuLieu}
                 onUnlock={unlock}
               />
             </motion.div>
@@ -168,6 +186,10 @@ export function Landing({
           fonts={teddie.fonts}
           typography={teddie.typography}
           tapHint={teddie.tapHint}
+          linePool={teddie.pool}
+          // Gấu nằm ngay màn đầu tiên: tải lười thì gấu hiện ra sau cả bong
+          // bóng thoại, bong bóng chỉ vào một khoảng trống.
+          preload
         />
       ) : null}
 

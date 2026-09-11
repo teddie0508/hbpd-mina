@@ -170,6 +170,13 @@ const siteContent = shape({
     title: text(300),
     subtitle: text(1000),
     unlockedNote: text(300),
+    finalCountdown: bool,
+    reminder: shape({
+      enabled: bool,
+      label: text(100),
+      eventTitle: text(200),
+      leadMinutes: number(0, 180),
+    }),
     ...styled,
   }),
 
@@ -185,6 +192,7 @@ const siteContent = shape({
       errorText: text(300),
       answers: list(text(200), 50),
     }),
+    envelopeSound: bool,
     ...styled,
   }),
 

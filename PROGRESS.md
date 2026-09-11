@@ -15,7 +15,10 @@ Cập nhật: 11/09/2026. Sinh nhật: **02/11/2026**.
 | Diễn tập 0h | Tab Chung → cookie `mina_rehearsal` (mốc mở khoá giả) + bật xem như Mina + xoá cookie đã trả lời tên. **Chỉ có tác dụng khi đã đăng nhập** — người ngoài tự đặt cookie này cũng không mở được trang sớm. Nội dung đã lưu không đổi; tự hết sau 15 phút |
 | Hồi âm | Ô viết thư cuối trang Hoa (`flowers.reply`) → `lib/inbox.ts`, mỗi thư/dòng nhật ký là **một tệp riêng** dưới `mina/inbox/` (private), không nằm trong nội dung. Gửi được chỉ khi `!isSealed()`, 10 lượt/10 phút/IP, tối đa 500 mục. Nhật ký: mở phong bì, tới màn kết — không ghi khi bạn đăng nhập xem bình thường, có ghi (nhãn "bạn xem thử") khi xem như Mina/diễn tập |
 | Thẻ xem trước khi gửi link | Ảnh là file `app/opengraph-image.png` (+ `.alt.txt`) — Next tự gắn og:image/twitter:image kèm kích thước. Tiêu đề = `documentTitle`, mô tả = `shareDescription` (tab Chung). `metadataBase` lấy `VERCEL_PROJECT_PRODUCTION_URL`, dự phòng tên miền `.vercel.app`. Ai có link cũng thấy thẻ này trước ngày mở, và Messenger/Zalo nhớ thẻ khá lâu — xong hẳn rồi mới gửi link |
-| Gấu chờ | `waitingTeddie` — máy chủ bốc 1 ảnh + 1 câu mỗi lần tải trang, chỉ khi còn khoá; bỏ qua ảnh placehold.co; font và dòng nhắc dùng chung với tab Gấu |
+| 10 giây cuối | `countdown.finalCountdown` — 10 giây cuối là một con số lớn (vòng sáng loang mỗi giây), về 0 hiện `unlockedNote` 2,2 giây rồi mới ra phong bì. `router.refresh()` lấy nhạc chạy NGAY lúc về 0 (`onZero`), không đợi tới lúc ra phong bì. Ba phút cuối xin Wake Lock giữ màn hình sáng |
+| Nhắc lịch | `countdown.reminder` — nút tải `/api/reminder` (.ics, UID cố định theo giờ mở, chuông reo trước `leadMinutes` phút, dòng gập theo byte) + link Google Calendar. Thẻ `<a>` thường, KHÔNG `download` (Safari iOS mới mở bảng Thêm vào Lịch). Ẩn khi đã qua giờ nhắc |
+| Tiếng giấy mở phong bì | `landing.envelopeSound` — tổng hợp bằng Web Audio (`lib/paper-sound.ts`), không tệp, không thẻ `<audio>` thứ hai (sợ làm dừng nhạc trên iPhone). Mở khoá AudioContext ngay trong cú chạm phong bì, phát lúc phong bì thật sự mở (có thể sau lớp hỏi tên). Nút gạt im lặng của iPhone tắt tiếng này, nhạc vẫn phát |
+| Gấu chờ | `waitingTeddie` — máy chủ bốc 1 ảnh + 1 câu mỗi lần tải trang, chỉ khi còn khoá; chạm gấu đổi sang câu khác (gửi kèm cả kho câu); ảnh `preload`; bỏ qua ảnh placehold.co; font và dòng nhắc dùng chung với tab Gấu |
 | Ngôn ngữ | Chủ yếu tiếng Việt, có chỗ trộn tiếng Anh → registry font đánh dấu font nào **không** có dấu tiếng Việt |
 | Cổng vào | **Đếm ngược tới 02/11/2026 00:00 +07:00**, tự mở khi về 0. Xem trước bằng `/?preview=1` (phải đã đăng nhập) |
 | Điều hướng | Route thật để nút Back và swipe-back của Safari hoạt động. `/hub`, `/message`, `/memories`, `/flowers` dựng **tĩnh** và được prefetch; chỉ `/` là động |
@@ -57,6 +60,8 @@ lib/
   content/uploads.ts             gom đường dẫn tệp tải lên mà một bản lưu đang dùng
   inbox.ts                       hộp thư: thư Mina gửi + nhật ký, mỗi mục một tệp
   moments.ts                     ghi nhật ký từ trình duyệt, mỗi loại một lần/tab
+  reminder.ts                    dựng tệp .ics và link Google Calendar (app/api/reminder)
+  paper-sound.ts                 tiếng giấy mở phong bì bằng Web Audio
   rate-limit.ts  useFocusTrap.ts  gate.ts (khoá, hỏi tên, diễn tập)  passphrase.ts  blob-paths.ts
   {fonts,theme,auth,placeholder,bouquet,crop,text,cx}.ts
 next.config.ts                   header chống nhúng iframe, nosniff, referrer
@@ -172,10 +177,10 @@ el.textContent = `
 
 ## Việc còn lại
 
-- [ ] **Phase 7** — chạy thử thật trên Safari macOS + iOS: animation mở phong bì, mưa cánh hoa ở 120Hz, nhạc bật đúng lúc chạm, xoay ngang
-- [x] Đã deploy: a-special-gift-to-my-love.vercel.app · Blob store dùng chung, tiền tố `mina/` · region SIN1
-- [ ] **Đổi `AUTH_SECRET` trên Vercel** (một token phiên từng bị in ra trong lúc làm việc) rồi Redeploy — mọi phiên đăng nhập cũ sẽ mất hiệu lực
-- [ ] Sau lần lưu đầu tiên trên bản deploy: xem thông báo lưu có cảnh báo "vẫn lưu ở chế độ public" không. Không có thì tệp nội dung đã private, và bản cũ `site.json` public đã tự được chuyển thành `site-legacy.json` private
+- [ ] **Phase 7** — chạy thử thật trên iPhone bằng nút **Diễn tập 0h** (chọn 15 giây): 10 giây cuối, tiếng giấy, nhạc bật đúng lúc chạm, hỏi tên, mưa cánh hoa ở 120Hz
+- [x] Đã deploy: a-special-gift-to-my-love.vercel.app · Blob store dùng chung, tiền tố `mina/` · region SIN1 · push lên `main` là Vercel tự deploy
+- [x] Đã đổi `AUTH_SECRET` trên Vercel (11/09/2026)
+- [ ] **Vá chỗ lộ `mina/content/site.json`** (phát hiện 11/09/2026). Kho Blob là kho public — lưu private bị từ chối, bản lưu rơi về public kèm cảnh báo. Tệp `site.json` ở đường dẫn cố định trả 200 cho bất kỳ ai, và tên kho lộ ngay trên màn đếm ngược qua link ảnh gấu chờ. Hướng vá đã đề xuất: (1) tải ảnh gấu chờ qua trang mình để giấu tên kho, (2) chép `site.json` sang đường dẫn ngẫu nhiên, đọc lại khớp rồi mới xoá bản cũ, (3) lâu dài: kho private riêng cho nội dung + hộp thư. **Đang chờ bạn đồng ý**
 
 `.data/` đã gitignore nên không bao giờ lên Vercel — bản deploy tự dùng mặc định trong `defaults.ts`, tức đếm ngược tới 02/11/2026 có hiệu lực ngay.
 
@@ -193,7 +198,6 @@ Lệnh khác: `npm run build`, `npm run typecheck`, `npm run format`.
 
 ## Còn chờ bạn
 
-- 3 icon cho Message / Memories / Flowers — hiện là ô nét đứt giữ chỗ, tải lên ở tab "Lựa chọn"
-- Ảnh thật — hiện dùng placehold.co đúng tỉ lệ từng vị trí
-- File nhạc — danh sách rỗng nên `MiniPlayer` đang tự ẩn
-- Repo GitHub tên `hbpd-mina` còn folder là `hpbd-mina`; git đã init nhưng **chưa có remote, chưa commit lần nào**
+- Nội dung thật (ảnh, nhạc, lá thư, gấu) do bạn tự soạn trên bản deploy qua `/customize` — `defaults.ts` chỉ là điểm khởi đầu, ảnh giữ chỗ placehold.co chỉ còn ở chỗ nào chưa thay
+- Repo: github.com/teddie0508/hbpd-mina (tên repo `hbpd-mina`, thư mục máy là `hpbd-mina`)
+- Kế hoạch đêm 01/11: 23:50 bạn gửi email hẹn Mina 23:59 mở trang; trên màn đếm ngược có sẵn nút nhắc lịch (chuông reo trước 5 phút). Khoảng 23:55 tự mở trang một lần để máy chủ khởi động sẵn (lần tải nguội mất ~2,6 giây)

@@ -178,6 +178,22 @@
   animation: note-nudge 2.4s ease-in-out infinite;
 }
 
+/* Vòng sáng loang ra mỗi giây ở 10 giây cuối. Chạy MỘT lần theo key của con
+   số — không phải vòng lặp vô hạn — nên `forwards` giữ nó tan hẳn ở cuối. */
+@keyframes final-ring {
+  0% {
+    transform: scale(0.82);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+}
+@utility final-ring {
+  animation: final-ring 0.95s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
 /* Đốm sáng nền trôi qua trôi lại. Chỉ động vào transform và opacity nên
    Safari đẩy hẳn xuống luồng ghép ảnh, luồng chính không phải làm gì.
    Khoảng dịch của từng đốm truyền vào qua --mote-dx / --mote-dy. */

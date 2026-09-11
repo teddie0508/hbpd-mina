@@ -54,6 +54,13 @@ export const DEFAULT_CONTENT: SiteContent = {
     title: "Sắp tới rồi",
     subtitle: "Có một thứ đang đợi em. Quay lại đúng ngày nhé.",
     unlockedNote: "Đến giờ rồi.",
+    finalCountdown: true,
+    reminder: {
+      enabled: true,
+      label: "Nhắc em lúc 0h",
+      eventTitle: "Mở quà của Teddie 🎁",
+      leadMinutes: 5,
+    },
     fonts: { heading: "cormorant", body: "be-vietnam", accent: "mali" },
     typography: baseType(),
   },
@@ -71,6 +78,7 @@ export const DEFAULT_CONTENT: SiteContent = {
       // Gõ hoa hay thường, có dấu hay không dấu đều qua được.
       answers: ["mina", "my", "nguyễn huyền my", "huyền my", "naiuoy"],
     },
+    envelopeSound: true,
     fonts: { heading: "great-vibes", body: "be-vietnam", accent: "mali" },
     typography: baseType(),
   },

@@ -137,8 +137,25 @@ export interface LandingContent {
   headline: string;
   subline: string;
   passphrase: PassphraseContent;
+  /** Tiếng sột soạt khi phong bì mở — tổng hợp tại chỗ, không cần tệp âm thanh. */
+  envelopeSound: boolean;
   fonts: FontSet;
   typography: TypeSet;
+}
+
+/**
+ * Nút "nhắc em" ở màn đếm ngược: thêm một sự kiện vào lịch điện thoại, chuông
+ * reo trước giờ mở vài phút để kịp mở trang xem 10 giây cuối.
+ * Ai có link cũng bấm được, nên tiêu đề sự kiện đừng viết gì lộ bất ngờ.
+ */
+export interface ReminderContent {
+  enabled: boolean;
+  /** Chữ trên nút. */
+  label: string;
+  /** Tên sự kiện hiện trong lịch và trong thông báo. */
+  eventTitle: string;
+  /** Sự kiện bắt đầu (và chuông reo) trước giờ mở bao nhiêu phút. */
+  leadMinutes: number;
 }
 
 export interface CountdownContent {
@@ -148,6 +165,13 @@ export interface CountdownContent {
   subtitle: string;
   /** Dòng hiện đúng lúc đồng hồ về 0, trước khi chuyển sang phong bì. */
   unlockedNote: string;
+  /**
+   * 10 giây cuối: bốn ô số nhường chỗ cho MỘT con số lớn giữa màn hình, về 0
+   * thì `unlockedNote` đứng một nhịp rồi mới ra phong bì. Tắt thì hết giờ là
+   * sang phong bì ngay như cũ.
+   */
+  finalCountdown: boolean;
+  reminder: ReminderContent;
   /** Font riêng: màn này luôn là tiếng Việt nên mặc định chọn font có dấu. */
   fonts: FontSet;
   typography: TypeSet;
@@ -341,6 +365,7 @@ export interface LandingData {
     headline: string;
     subline: string;
     passphrase: PublicPassphrase;
+    envelopeSound: boolean;
     fonts: FontSet;
     typography: TypeSet;
   };
@@ -365,6 +390,7 @@ export function forLanding(content: SiteContent): LandingData {
       headline,
       subline,
       passphrase: { enabled, title, hint, placeholder, submitLabel, errorText },
+      envelopeSound: content.landing.envelopeSound,
       fonts,
       typography,
     },
@@ -389,6 +415,8 @@ export const MAX_REPLY_CHARS = 2000;
 /** Gấu ở màn đếm ngược đã được bốc sẵn cho lần tải trang này. */
 export interface WaitingTeddiePick {
   spot: TeddieSpot;
+  /** Cả kho câu, để chạm vào gấu là đổi sang câu khác. */
+  pool: string[];
   fonts: FontSet;
   typography: TypeSet;
   tapHint: string;
@@ -416,6 +444,8 @@ export function pickWaitingTeddie(
 
   return {
     spot: { image: boc(anhThat), lines: cau.length > 0 ? [boc(cau)] : [] },
+    // Các câu này vốn viết cho màn đếm ngược, gửi cả kho xuống không lộ gì thêm.
+    pool: cau,
     fonts: content.teddie.fonts,
     typography: content.teddie.typography,
     tapHint: content.teddie.tapHint,

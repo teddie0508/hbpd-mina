@@ -71,8 +71,14 @@ export function Teddie({
   fonts,
   typography,
   tapHint = "",
+  linePool,
+  preload = false,
 }: {
   spot: TeddieSpot;
+  /** Có kho câu thì mỗi lần chạm vào gấu là đổi sang một câu khác trong kho. */
+  linePool?: string[];
+  /** Tải ảnh ngay khi vào trang thay vì đợi. Dùng cho gấu nằm ngay màn đầu. */
+  preload?: boolean;
   /**
    * Font của trang đang đứng.
    *
@@ -95,7 +101,10 @@ export function Teddie({
   const [burst, setBurst] = useState(0);
   const hideTimer = useRef<number | null>(null);
 
-  const lines = spot.lines.filter((l) => l.trim());
+  /** Câu đang hiện sau khi chạm đổi câu. null = câu máy chủ bốc sẵn. */
+  const [cauDoi, setCauDoi] = useState<string[] | null>(null);
+
+  const lines = (cauDoi ?? spot.lines).filter((l) => l.trim());
   const hasLines = lines.length > 0;
 
   const openBubble = useCallback(() => {
@@ -157,8 +166,16 @@ export function Teddie({
       /* bỏ qua */
     }
 
+    // Có kho câu thì đổi sang một câu KHÁC câu đang hiện — bốc trúng lại
+    // đúng câu cũ thì chạm vào như không có gì xảy ra.
+    const kho = (linePool ?? []).map((l) => l.trim()).filter(Boolean);
+    if (kho.length > 1) {
+      const khac = kho.filter((l) => l !== lines[0]);
+      setCauDoi([khac[Math.floor(Math.random() * khac.length)]]);
+    }
+
     // Chạm vào là gọi bong bóng ra lại, phòng khi nó vừa tự thu đi.
-    if (hasLines) openBubble();
+    if (hasLines || kho.length > 0) openBubble();
   };
 
   return (
@@ -260,6 +277,7 @@ export function Teddie({
                 height={256}
                 sizes="(max-width: 640px) 96px, 128px"
                 quality={90}
+                preload={preload}
                 className="size-24 object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,0.45)] sm:size-32"
               />
             </motion.button>
