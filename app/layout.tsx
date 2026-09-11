@@ -31,6 +31,10 @@ export async function generateMetadata(): Promise<Metadata> {
     // Ảnh không khai ở đây: đặt file app/opengraph-image.png (kèm .alt.txt) là
     // Next tự gắn og:image cùng kích thước, và file luôn thắng khai báo tay.
     openGraph: {
+      // Mọi trang đều khai chung một địa chỉ: trang bìa. Lỡ gửi link /hub
+      // hay link có đuôi ?v=..., thẻ xem trước vẫn là thẻ của trang bìa — và
+      // các trang trong vốn cũng đá người chưa qua cổng về đó.
+      url: "/",
       title: content.documentTitle,
       description: content.shareDescription,
       type: "website",
