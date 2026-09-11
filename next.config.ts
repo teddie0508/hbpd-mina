@@ -21,6 +21,29 @@ const nextConfig: NextConfig = {
     // Chỉ nạp đúng phần cần dùng của motion thay vì cả gói.
     optimizePackageImports: ["motion"],
   },
+
+  /**
+   * Header an toàn cho mọi trang.
+   *
+   * Chặn nhúng vào iframe của trang khác (clickjacking): không có hai dòng đầu
+   * thì một trang lạ có thể nhúng /customize vào khung trong suốt rồi lừa bạn
+   * bấm trúng nút Lưu. Khai cả header cũ lẫn CSP mới cho trình duyệt nào cũng
+   * hiểu. Không đặt một CSP đầy đủ: trang dùng Google Fonts và style inline,
+   * CSP chặt quá sẽ làm vỡ giao diện mà lợi thêm chẳng bao nhiêu.
+   */
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -3,15 +3,23 @@
 import { cookies } from "next/headers";
 
 import { isEditor } from "@/lib/auth";
+import { UPLOAD_PREFIX } from "@/lib/blob-paths";
 import type { SiteContent } from "@/lib/content/schema";
 import {
+  deleteUnusedUploads,
+  findUnusedUploads,
+  getContent,
   listVersions,
   readVersion,
   saveContent,
   storageMode,
   type ContentVersion,
+  type UnusedUpload,
 } from "@/lib/content/store";
+import { validateContent } from "@/lib/content/validate";
 import { GUEST_COOKIE, GUEST_MAX_AGE } from "@/lib/gate";
+
+const HET_PHIEN = "Phiên đăng nhập đã hết hạn. Tải lại trang và đăng nhập lại.";
 
 export interface SaveResult {
   ok: boolean;
@@ -20,36 +28,63 @@ export interface SaveResult {
   /** Bản máy chủ vừa ghi. Trình sửa lấy đúng bản này làm mốc so sánh. */
   content?: SiteContent;
   storage?: "blob" | "local";
+  /** Đã có một bản khác được lưu sau lúc trình sửa này mở ra. */
+  conflict?: { savedAt: string };
+  /** Lưu được, nhưng có điều cần biết. */
+  warning?: string;
 }
 
 /**
  * Lưu nội dung.
  *
- * Là Server Action để trả thẳng bản vừa ghi về cho trình sửa làm mốc so
- * sánh, khỏi phải đọc lại từ máy chủ. Không còn cache giữa các request nào
- * cần xoá: lần đọc kế tiếp luôn lấy thẳng từ kho.
+ * Hai lớp chặn trước khi ghi:
+ *
+ * 1. Kiểm cấu trúc (lib/content/validate.ts) — một payload sai kiểu ghi ra là
+ *    trang chính vỡ.
+ *
+ * 2. Chống ghi đè. Trình sửa gửi kèm `baseUpdatedAt`: mốc của bản mà nó đang
+ *    sửa dựa trên. Trên kho mà đã có bản mới hơn thì từ chối và báo lại, trừ
+ *    khi bạn bấm "Vẫn lưu đè". Không có lớp này thì mở hai tab /customize,
+ *    lưu ở tab mới rồi lỡ tay lưu ở tab cũ là mọi thay đổi ở tab mới bay mất
+ *    mà không một lời cảnh báo.
  */
 export async function saveSiteContent(
   content: SiteContent,
+  options: { baseUpdatedAt: string; force?: boolean },
 ): Promise<SaveResult> {
-  if (!(await isEditor())) {
-    return {
-      ok: false,
-      error: "Phiên đăng nhập đã hết hạn. Tải lại trang và đăng nhập lại.",
-    };
+  if (!(await isEditor())) return { ok: false, error: HET_PHIEN };
+
+  const loi = validateContent(content);
+  if (loi) {
+    return { ok: false, error: `Dữ liệu không hợp lệ ở ${loi}.` };
   }
 
-  if (!content || typeof content !== "object") {
-    return { ok: false, error: "Dữ liệu gửi lên không hợp lệ." };
+  if (!options?.force) {
+    const hienTai = await getContent();
+    // So "mới hơn" chứ không so "khác". `list()` của Blob có lúc trả về trễ
+    // một nhịp, chưa thấy tệp vừa ghi xong: vừa lưu xong mà lưu tiếp ngay thì
+    // máy chủ đọc ra bản CŨ HƠN mốc của trình sửa. So "khác" là báo xung đột
+    // oan đúng lúc đang lưu liên tục — lặp lại y hệt lỗi "lưu lần hai không
+    // ăn" từng gặp. Chuỗi ISO cùng định dạng nên so chuỗi là so thời gian.
+    if (hienTai.updatedAt > (options?.baseUpdatedAt ?? "")) {
+      return {
+        ok: false,
+        conflict: { savedAt: hienTai.updatedAt },
+        error: "Đã có một bản mới hơn được lưu từ nơi khác.",
+      };
+    }
   }
 
   try {
-    const saved = await saveContent(content);
-
+    const { content: saved, privacy } = await saveContent(content);
     return {
       ok: true,
       content: saved,
       storage: storageMode(),
+      warning:
+        privacy === "public"
+          ? "Kho Blob chưa nhận tệp private, nên bản này vẫn lưu ở chế độ public — ai biết đường dẫn vẫn đọc được. Báo lại để kiểm cấu hình kho."
+          : undefined,
     };
   } catch (error) {
     console.error("[content] lưu thất bại:", error);
@@ -95,9 +130,7 @@ export async function listSavedVersions(): Promise<{
   versions?: ContentVersion[];
   error?: string;
 }> {
-  if (!(await isEditor())) {
-    return { ok: false, error: "Phiên đăng nhập đã hết hạn." };
-  }
+  if (!(await isEditor())) return { ok: false, error: HET_PHIEN };
   if (storageMode() !== "blob") {
     return {
       ok: false,
@@ -117,16 +150,16 @@ export async function listSavedVersions(): Promise<{
  * Đọc một bản cũ ra để xem lại.
  *
  * CHỈ ĐỌC, không ghi đè gì cả. Bên gọi nạp nội dung này vào trình sửa như một
- * bản nháp; phải tự bấm Lưu thì mới thành bản hiện hành. Nhờ vậy xem nhầm bản
- * cũng không mất gì.
+ * bản nháp; phải tự bấm Lưu thì mới thành bản hiện hành.
  */
 export async function loadSavedVersion(pathname: string): Promise<{
   ok: boolean;
   content?: SiteContent;
   error?: string;
 }> {
-  if (!(await isEditor())) {
-    return { ok: false, error: "Phiên đăng nhập đã hết hạn." };
+  if (!(await isEditor())) return { ok: false, error: HET_PHIEN };
+  if (typeof pathname !== "string") {
+    return { ok: false, error: "Đường dẫn bản lưu không hợp lệ." };
   }
   try {
     return { ok: true, content: await readVersion(pathname) };
@@ -135,6 +168,56 @@ export async function loadSavedVersion(pathname: string): Promise<{
       ok: false,
       error:
         error instanceof Error ? error.message : "Không đọc được bản lưu này.",
+    };
+  }
+}
+
+/** Tìm ảnh và nhạc không còn bản lưu nào dùng tới. Chỉ tìm, chưa xoá. */
+export async function scanUnusedUploads(): Promise<{
+  ok: boolean;
+  files?: UnusedUpload[];
+  error?: string;
+}> {
+  if (!(await isEditor())) return { ok: false, error: HET_PHIEN };
+  if (storageMode() !== "blob") {
+    return {
+      ok: false,
+      error:
+        "Chạy ở máy thì tệp nằm trong public/uploads — xoá tay thư mục đó là được.",
+    };
+  }
+  try {
+    return { ok: true, files: await findUnusedUploads() };
+  } catch (error) {
+    return {
+      ok: false,
+      error:
+        error instanceof Error ? error.message : "Không quét được kho tệp.",
+    };
+  }
+}
+
+/** Xoá những tệp đã xem trong danh sách mà đến giờ vẫn còn thừa. */
+export async function removeUnusedUploads(pathnames: string[]): Promise<{
+  ok: boolean;
+  deleted?: number;
+  error?: string;
+}> {
+  if (!(await isEditor())) return { ok: false, error: HET_PHIEN };
+  if (
+    !Array.isArray(pathnames) ||
+    !pathnames.every(
+      (p) => typeof p === "string" && p.startsWith(UPLOAD_PREFIX),
+    )
+  ) {
+    return { ok: false, error: "Danh sách tệp không hợp lệ." };
+  }
+  try {
+    return { ok: true, deleted: await deleteUnusedUploads(pathnames) };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Không xoá được tệp.",
     };
   }
 }

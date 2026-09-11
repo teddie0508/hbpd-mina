@@ -31,10 +31,21 @@ function remainingUntil(target: number, now: number): Remaining {
 export function Countdown({
   content,
   targetIso,
+  serverNow,
   onUnlock,
 }: {
   content: CountdownContent;
   targetIso: string;
+  /**
+   * Giờ của máy chủ lúc dựng trang, tính bằng ms.
+   *
+   * Đếm theo đồng hồ của điện thoại thì lệch: điện thoại nhanh 30 giây là
+   * đồng hồ về 0 trước máy chủ 30 giây — phong bì hiện ra, Mina nhập tên, rồi
+   * bị cổng khoá trên máy chủ đá ngược về màn đếm ngược; màn này lại thấy
+   * 00:00 nên lại mở phong bì... cứ thế giật qua giật lại đúng vào khoảnh khắc
+   * quan trọng nhất. Đếm theo giờ máy chủ thì hai bên luôn cùng một nhịp.
+   */
+  serverNow: number;
   onUnlock: () => void;
 }) {
   const target = new Date(targetIso).getTime();
@@ -42,15 +53,27 @@ export function Countdown({
   const [left, setLeft] = useState<Remaining | null>(null);
 
   useEffect(() => {
+    // Độ lệch đo một lần lúc trang vừa lên. Số đo này luôn chậm hơn giờ máy
+    // chủ thật một khoảng bằng thời gian tải trang, nên đồng hồ về 0 muộn hơn
+    // một chút chứ không bao giờ sớm hơn — đúng chiều an toàn, vì mở SỚM mới
+    // là thứ gây giật qua giật lại.
+    const lech = serverNow - Date.now();
+    // Chỉ báo mở khoá một lần. Hẹn giờ vẫn chạy trong lúc màn này làm hoạt
+    // cảnh biến đi, mà mỗi lần báo là trang bìa gọi router.refresh().
+    let daBao = false;
+
     const tick = () => {
-      const now = Date.now();
+      const now = Date.now() + lech;
       setLeft(remainingUntil(target, now));
-      if (now >= target) onUnlock();
+      if (now >= target && !daBao) {
+        daBao = true;
+        onUnlock();
+      }
     };
     tick();
     const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
-  }, [target, onUnlock]);
+  }, [target, serverNow, onUnlock]);
 
   const units: Array<{ value: number; label: string; pulse?: boolean }> = [
     { value: left?.days ?? 0, label: "ngày" },
@@ -111,12 +134,14 @@ export function Countdown({
         ))}
       </div>
 
-      {/* Phong bì khoá: gợi ý có thứ gì đó đang đợi mà chưa mở được. */}
-      <motion.div
+      {/* Phong bì khoá: gợi ý có thứ gì đó đang đợi mà chưa mở được.
+          Lơ lửng bằng CSS, không bằng motion — vòng lặp vô hạn. */}
+      <div
         aria-hidden
-        animate={{ y: [0, -6, 0] }}
-        transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
-        className="relative mt-2 h-16 w-24 opacity-40"
+        className="drift-y relative mt-2 h-16 w-24 opacity-40"
+        style={
+          { "--float-y": "-6px", "--float-dur": "4.5s" } as React.CSSProperties
+        }
       >
         <svg viewBox="0 0 96 64" fill="none" className="size-full">
           <rect
@@ -143,7 +168,7 @@ export function Countdown({
             fill="color-mix(in srgb, var(--c-gold) 50%, transparent)"
           />
         </svg>
-      </motion.div>
+      </div>
     </motion.div>
   );
 }

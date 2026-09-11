@@ -12,8 +12,6 @@ import {
 import type { SiteContent } from "@/lib/content/schema";
 import { cx } from "@/lib/cx";
 
-import { StorageProvider } from "./upload";
-import { VersionHistory } from "./VersionHistory";
 import {
   FlowersPanel,
   GeneralPanel,
@@ -24,6 +22,9 @@ import {
   MusicPanel,
   TeddiePanel,
 } from "./panels";
+import { StorageProvider } from "./upload";
+import { UploadCleanup } from "./UploadCleanup";
+import { VersionHistory } from "./VersionHistory";
 
 const TABS = [
   { key: "general", label: "Chung" },
@@ -41,8 +42,16 @@ type TabKey = (typeof TABS)[number]["key"];
 type SaveState =
   | { kind: "idle" }
   | { kind: "saving" }
-  | { kind: "saved"; at: Date; storage: "blob" | "local" }
-  | { kind: "failed"; reason: string };
+  | {
+      kind: "saved";
+      at: Date;
+      storage: "blob" | "local";
+      /** Lưu được nhưng có điều cần biết — thông báo sẽ không tự tắt. */
+      warning?: string;
+    }
+  | { kind: "failed"; reason: string }
+  /** Trên kho đã có bản mới hơn bản mà trình sửa này đang sửa dựa trên. */
+  | { kind: "conflict"; savedAt: string };
 
 /**
  * So sánh bỏ qua `updatedAt`.
@@ -82,10 +91,9 @@ export function EditorShell({
   /**
    * Bản mới nhất mà máy chủ xác nhận đã ghi.
    *
-   * Trước đây cờ "chưa lưu" so bản nháp với bản ĐỌC LẠI từ máy chủ. Lần đọc
-   * đó có thể còn trễ một nhịp, nên lưu xong nút vẫn báo "Lưu thay đổi" và
-   * phải bấm lần hai mới thấy khớp. Giờ lấy thẳng bản mà chính lệnh ghi trả
-   * về làm mốc, không phụ thuộc vào việc đọc lại nữa.
+   * Hai việc: làm mốc cho cờ "chưa lưu", và `updatedAt` của nó là mốc gửi
+   * kèm mỗi lần lưu để máy chủ phát hiện có ai (một tab khác) vừa lưu chen
+   * vào hay không.
    */
   const [saved, setSaved] = useState<SiteContent>(initial);
   const [tab, setTab] = useState<TabKey>("general");
@@ -107,12 +115,24 @@ export function EditorShell({
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
 
-  async function handleSave() {
+  /**
+   * @param force Bỏ qua kiểm tra ghi đè — chỉ dùng khi bạn đã thấy cảnh báo
+   *              xung đột và chủ động chọn "Vẫn lưu đè".
+   */
+  async function handleSave(force = false) {
     if (save.kind === "saving") return;
     setSave({ kind: "saving" });
 
     try {
-      const result = await saveSiteContent(draft);
+      const result = await saveSiteContent(draft, {
+        baseUpdatedAt: saved.updatedAt,
+        force,
+      });
+
+      if (result.conflict) {
+        setSave({ kind: "conflict", savedAt: result.conflict.savedAt });
+        return;
+      }
 
       if (!result.ok) {
         setSave({ kind: "failed", reason: result.error ?? "Lưu thất bại." });
@@ -129,6 +149,7 @@ export function EditorShell({
         kind: "saved",
         at: new Date(),
         storage: result.storage ?? storage,
+        warning: result.warning,
       });
     } catch {
       setSave({
@@ -202,7 +223,10 @@ export function EditorShell({
             </button>
             <button
               type="button"
-              onClick={handleSave}
+              // Bọc trong arrow function: truyền thẳng handleSave thì sự kiện
+              // click bị nhận làm tham số `force` — một object luôn là truthy,
+              // tức lần nào bấm Lưu cũng là "lưu đè", lớp chống ghi đè vô dụng.
+              onClick={() => void handleSave()}
               disabled={save.kind === "saving" || !dirty}
               className="bg-gold text-deep hover:bg-gold/90 rounded-lg px-4 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
             >
@@ -237,8 +261,9 @@ export function EditorShell({
       <StorageProvider mode={storage}>
         <main className="mt-5">
           {tab === "general" ? (
-            <div className="mb-5">
+            <div className="mb-5 space-y-5">
               <VersionHistory onLoad={(khoiPhuc) => setDraft(khoiPhuc)} />
+              <UploadCleanup />
             </div>
           ) : null}
           {tab === "general" ? (
@@ -289,7 +314,12 @@ export function EditorShell({
         </main>
       </StorageProvider>
 
-      <SaveToast state={save} onDismiss={() => setSave({ kind: "idle" })} />
+      <SaveToast
+        state={save}
+        onDismiss={() => setSave({ kind: "idle" })}
+        onForce={() => void handleSave(true)}
+        onReload={() => window.location.reload()}
+      />
     </div>
   );
 }
@@ -305,12 +335,17 @@ const SUCCESS_TIMEOUT_MS = 5000;
 function SaveToast({
   state,
   onDismiss,
+  onForce,
+  onReload,
 }: {
   state: SaveState;
   onDismiss: () => void;
+  onForce: () => void;
+  onReload: () => void;
 }) {
   useEffect(() => {
-    if (state.kind !== "saved") return;
+    // Chỉ tự tắt khi lưu thành công mà không có gì cần lưu ý.
+    if (state.kind !== "saved" || state.warning) return;
     const id = window.setTimeout(onDismiss, SUCCESS_TIMEOUT_MS);
     return () => window.clearTimeout(id);
   }, [state, onDismiss]);
@@ -321,7 +356,11 @@ function SaveToast({
         {state.kind === "idle" ? null : (
           <motion.div
             key={state.kind}
-            role={state.kind === "failed" ? "alert" : "status"}
+            role={
+              state.kind === "failed" || state.kind === "conflict"
+                ? "alert"
+                : "status"
+            }
             initial={{ opacity: 0, y: 24, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.97 }}
@@ -329,9 +368,15 @@ function SaveToast({
             className={cx(
               "pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-xl border px-4 py-3 shadow-2xl shadow-black/40 backdrop-blur",
               state.kind === "saved" &&
+                !state.warning &&
                 "border-emerald-400/40 bg-emerald-500/15 text-emerald-100",
+              state.kind === "saved" &&
+                state.warning &&
+                "border-amber-400/45 bg-amber-500/15 text-amber-100",
               state.kind === "failed" &&
                 "border-red-400/45 bg-red-500/15 text-red-100",
+              state.kind === "conflict" &&
+                "border-amber-400/45 bg-amber-500/15 text-amber-100",
               state.kind === "saving" &&
                 "border-mist/25 bg-base/85 text-mist/85",
             )}
@@ -346,7 +391,7 @@ function SaveToast({
                 aria-hidden
                 className="mt-0.5 shrink-0 text-base leading-none"
               >
-                {state.kind === "saved" ? "✓" : "!"}
+                {state.kind === "saved" && !state.warning ? "✓" : "!"}
               </span>
             )}
 
@@ -358,11 +403,37 @@ function SaveToast({
                   <p className="font-medium">
                     Đã lưu lúc {formatTime(state.at)}
                   </p>
-                  <p className="mt-0.5 text-[12px] opacity-75">
-                    {state.storage === "blob"
-                      ? "Đã ghi lên Vercel Blob. Mở lại trang chính là thấy ngay."
-                      : "Đã ghi vào .data/content.json trên máy này."}
+                  <p className="mt-0.5 text-[12px] leading-relaxed opacity-80">
+                    {state.warning ??
+                      (state.storage === "blob"
+                        ? "Đã ghi lên Vercel Blob. Mở lại trang chính là thấy ngay."
+                        : "Đã ghi vào .data/content.json trên máy này.")}
                   </p>
+                </>
+              ) : state.kind === "conflict" ? (
+                <>
+                  <p className="font-medium">Có bản mới hơn vừa được lưu</p>
+                  <p className="mt-0.5 text-[12px] leading-relaxed opacity-85">
+                    Lúc {formatTime(state.savedAt)} đã có một bản khác được lưu
+                    — rất có thể từ một tab khác. Lưu bây giờ sẽ đè mất bản đó.
+                    Nếu lỡ đè, bản bị đè vẫn nằm trong Lịch sử bản lưu.
+                  </p>
+                  <div className="mt-2.5 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={onReload}
+                      className="rounded-lg border border-amber-300/50 bg-amber-400/15 px-2.5 py-1 text-[12px] font-medium hover:bg-amber-400/25"
+                    >
+                      Tải bản mới nhất
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onForce}
+                      className="rounded-lg border border-amber-300/30 px-2.5 py-1 text-[12px] opacity-85 hover:opacity-100"
+                    >
+                      Vẫn lưu đè
+                    </button>
+                  </div>
                 </>
               ) : (
                 <>

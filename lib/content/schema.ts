@@ -31,8 +31,8 @@ export interface ImageAsset {
   url: string;
   alt: string;
   /**
-   * Dòng ghi chú ở mặt sau tấm ảnh, kiểu "19/08 — lần đầu gặp em".
-   * Để trống thì ảnh không lật được.
+   * Dòng ghi chú của tấm ảnh, kiểu "19/08 — lần đầu gặp em". Hiện ngay dưới
+   * ảnh khi xem phóng to; để trống thì chỉ có ảnh.
    *
    * Không bắt buộc vì ảnh lưu từ trước không có trường này; mọi chỗ đọc phải
    * lường trước giá trị undefined.
@@ -125,8 +125,9 @@ export interface PassphraseContent {
   /**
    * Các đáp án được chấp nhận.
    *
-   * KHÔNG BAO GIỜ để danh sách này rơi xuống trình duyệt — `forClient()` cắt
-   * nó đi, và phần so đáp án nằm trong Server Action. Nếu không thì chỉ cần
+   * KHÔNG BAO GIỜ để danh sách này rơi xuống trình duyệt — `forLanding()` chỉ
+   * gửi `PublicPassphrase` (không có trường này), và phần so đáp án nằm trong
+   * Server Action. Nếu không thì chỉ cần
    * mở View Source là thấy hết, hỏng mất bất ngờ.
    */
   answers: string[];
@@ -206,7 +207,7 @@ export interface FlowersContent {
   heading: string;
   intro: string;
   shuffleLabel: string;
-  /** Dòng chữ bí mật nấp ở góc màn hình. */
+  /** Chữ trên nút nhỏ dẫn tới bó hoa thật (the REAL flower). */
   secretLabel: string;
   finale: {
     polaroid: ImageAsset | null;
@@ -283,21 +284,59 @@ export interface SiteContent {
   teddie: TeddieContent;
 }
 
+/** Lớp hỏi tên, bỏ danh sách đáp án. */
+export type PublicPassphrase = Omit<PassphraseContent, "answers">;
+
 /**
- * Bản nội dung an toàn để gửi xuống trình duyệt.
+ * Đúng những gì trang bìa cần — KHÔNG gì hơn.
  *
- * Cả `<ContentProvider>` ở layout gốc lẫn trang bìa đều đẩy nguyên object này
- * vào payload của React, tức là nó nằm sẵn trong HTML ai xem cũng đọc được.
- * Đáp án của lớp hỏi tên phải cắt đi trước, không thì mở View Source là biết
- * ngay phải gõ gì.
+ * Mọi thứ truyền vào client component đều nằm nguyên trong HTML gửi xuống,
+ * mở View Source là đọc được. Trang bìa lại là trang duy nhất người lạ vào
+ * được TRƯỚC ngày mở. Bản trước gửi cả SiteContent xuống (chỉ cắt đáp án của
+ * lớp hỏi tên), và đã kiểm bằng curl: cài một chuỗi bí mật vào lá thư, khoá
+ * đếm ngược tới năm 2030, chuỗi đó vẫn hiện nguyên trong HTML của màn đếm
+ * ngược — cả lá thư, lời kết bó hoa, ghi chú ảnh đều đọc được từ trước.
+ *
+ * Nên ở đây liệt kê TỪNG trường được phép đi, chứ không lấy cả khối rồi cắt
+ * bớt: thêm trường mới vào schema mà quên cắt thì nó lọt xuống ngay, còn liệt
+ * kê thế này thì trường mới mặc định KHÔNG đi.
  */
-export function forClient(content: SiteContent): SiteContent {
+export interface LandingData {
+  recipientName: string;
+  landing: {
+    headline: string;
+    subline: string;
+    passphrase: PublicPassphrase;
+    fonts: FontSet;
+    typography: TypeSet;
+  };
+  countdown: CountdownContent;
+  /** Có bật nhạc ngay lúc chạm phong bì không. */
+  startOnEnvelopeOpen: boolean;
+  /**
+   * Có bài nhạc nào không. Chỉ gửi có hay không, KHÔNG gửi URL — trang còn
+   * khoá thì danh sách bài không được xuống tới trình duyệt.
+   */
+  hasMusic: boolean;
+}
+
+export function forLanding(content: SiteContent): LandingData {
+  const { headline, subline, fonts, typography } = content.landing;
+  const { enabled, title, hint, placeholder, submitLabel, errorText } =
+    content.landing.passphrase;
+
   return {
-    ...content,
+    recipientName: content.recipientName,
     landing: {
-      ...content.landing,
-      passphrase: { ...content.landing.passphrase, answers: [] },
+      headline,
+      subline,
+      passphrase: { enabled, title, hint, placeholder, submitLabel, errorText },
+      fonts,
+      typography,
     },
+    countdown: content.countdown,
+    startOnEnvelopeOpen: content.music.startOnEnvelopeOpen,
+    hasMusic: content.music.tracks.length > 0,
   };
 }
 

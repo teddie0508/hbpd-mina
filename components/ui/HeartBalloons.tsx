@@ -1,6 +1,4 @@
-"use client";
-
-import { motion, useReducedMotion } from "motion/react";
+import type { CSSProperties } from "react";
 
 import { cx } from "@/lib/cx";
 
@@ -69,35 +67,32 @@ const TINT: Record<BalloonSpec["tint"], { light: string; dark: string }> = {
 /**
  * Bóng bay hình trái tim trôi quanh khối ảnh.
  * Thuần trang trí nên ẩn hẳn với trình đọc màn hình.
+ *
+ * Trôi bằng CSS keyframes (balloon-bob) chứ không bằng motion: lặp vô hạn thì
+ * phải nằm ở luồng ghép ảnh. Góc nghiêng riêng của từng quả truyền qua --r để
+ * keyframe lắc quanh đúng góc đó. Nhờ bỏ motion, component này cũng không còn
+ * cần "use client".
  */
 export function HeartBalloons() {
-  const reduced = useReducedMotion();
-
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0">
       {BALLOONS.map((balloon, i) => (
-        <motion.div
+        <div
           key={i}
-          className={cx("absolute", balloon.desktopOnly && "hidden sm:block")}
-          style={{
-            left: `${balloon.x}%`,
-            top: `${balloon.y}%`,
-            width: `${balloon.size}rem`,
-          }}
-          animate={
-            reduced
-              ? undefined
-              : {
-                  y: [0, -22, 0],
-                  rotate: [balloon.rotate, balloon.rotate + 6, balloon.rotate],
-                }
+          className={cx(
+            "balloon-bob absolute",
+            balloon.desktopOnly && "hidden sm:block",
+          )}
+          style={
+            {
+              left: `${balloon.x}%`,
+              top: `${balloon.y}%`,
+              width: `${balloon.size}rem`,
+              "--r": `${balloon.rotate}deg`,
+              "--dur": `${balloon.duration}s`,
+              "--delay": `${balloon.delay}s`,
+            } as CSSProperties
           }
-          transition={{
-            duration: balloon.duration,
-            delay: balloon.delay,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
         >
           <svg
             viewBox="0 0 100 168"
@@ -136,7 +131,7 @@ export function HeartBalloons() {
               transform="rotate(-24 32 32)"
             />
           </svg>
-        </motion.div>
+        </div>
       ))}
     </div>
   );

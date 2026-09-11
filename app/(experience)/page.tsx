@@ -1,5 +1,5 @@
 import { Landing } from "@/components/landing/Landing";
-import { forClient } from "@/lib/content/schema";
+import { forLanding } from "@/lib/content/schema";
 import { getContent } from "@/lib/content/store";
 import { isLocked, needsPassphrase } from "@/lib/gate";
 
@@ -13,16 +13,18 @@ export default async function LandingPage() {
     needsPassphrase(),
   ]);
 
-  // Không còn cần ?preview=1: cứ đăng nhập ở /customize là xem trước được
-  // toàn bộ trang, kể cả các trang trong.
+  // Cứ đăng nhập ở /customize là xem trước được toàn bộ trang, kể cả các
+  // trang trong.
   //
-  // forClient() cắt danh sách đáp án của lớp hỏi tên: nội dung truyền vào
-  // client component nằm nguyên trong HTML, để lọt là hết bất ngờ.
+  // forLanding() chỉ lấy đúng những trường trang bìa cần. Mọi thứ truyền vào
+  // client component nằm nguyên trong HTML, mà đây là trang người lạ vào được
+  // trước ngày mở — xem chú thích ở lib/content/schema.ts.
   return (
     <Landing
-      content={forClient(content)}
+      data={forLanding(content)}
       lockedOnServer={locked}
       askNameOnServer={askName}
+      serverNow={Date.now()}
     />
   );
 }

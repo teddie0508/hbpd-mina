@@ -2,12 +2,12 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAudio } from "@/components/providers/AudioProvider";
 import { Ambience } from "@/components/ui/Ambience";
 import { WarmFlash } from "@/components/ui/WarmFlash";
-import type { SiteContent } from "@/lib/content/schema";
+import type { LandingData } from "@/lib/content/schema";
 import { fontVars } from "@/lib/theme";
 
 import { Countdown } from "./Countdown";
@@ -15,15 +15,19 @@ import { Envelope } from "./Envelope";
 import { NameGate } from "./NameGate";
 
 export function Landing({
-  content,
+  data,
   lockedOnServer,
   askNameOnServer,
+  serverNow,
 }: {
-  content: SiteContent;
+  /** Chỉ những trường trang bìa cần — xem `forLanding` trong schema.ts. */
+  data: LandingData;
   /** Máy chủ đã tính sẵn còn khoá hay không, để lần dựng đầu không bị nhấp nháy. */
   lockedOnServer: boolean;
   /** Chạm phong bì xong còn phải hỏi tên nữa không. */
   askNameOnServer: boolean;
+  /** Giờ máy chủ lúc dựng trang, để đồng hồ đếm ngược không lệch theo điện thoại. */
+  serverNow: number;
 }) {
   const router = useRouter();
   const audio = useAudio();
@@ -32,8 +36,22 @@ export function Landing({
   const [opening, setOpening] = useState(false);
   const [needName, setNeedName] = useState(askNameOnServer);
   const [asking, setAsking] = useState(false);
+  const daLamMoi = useRef(false);
+  // Chờ nhạc có giới hạn: mạng rớt đúng lúc hết đếm ngược thì router.refresh()
+  // không bao giờ về, và phong bì không được phép khoá cứng vì chuyện đó.
+  const [hetChoNhac, setHetChoNhac] = useState(false);
 
-  const unlock = useCallback(() => setLocked(false), []);
+  const unlock = useCallback(() => {
+    setLocked(false);
+    // Lúc trang còn khoá, máy chủ cố ý KHÔNG gửi danh sách nhạc xuống (xem
+    // app/(experience)/layout.tsx). Tới giờ mở thì xin lại dữ liệu từ máy chủ
+    // — lúc này máy chủ đã thấy hết khoá nên gửi đủ. Chỉ gọi đúng một lần.
+    if (!daLamMoi.current) {
+      daLamMoi.current = true;
+      router.refresh();
+      window.setTimeout(() => setHetChoNhac(true), 5000);
+    }
+  }, [router]);
 
   // Nạp sẵn /hub ngay từ lúc vào trang. Đợi tới lúc chạm mới nạp thì
   // mạng yếu sẽ hụt một nhịp ngay giữa chuyển cảnh.
@@ -41,7 +59,19 @@ export function Landing({
     router.prefetch("/hub");
   }, [router]);
 
+  // Có nhạc, nhưng danh sách bài chưa về: vừa hết đếm ngược và router.refresh()
+  // đang chạy. Chạm phong bì lúc này thì audio.start() không có bài nào để
+  // phát, mà cơ hội bật nhạc hợp lệ trên iOS chỉ có đúng cú chạm đó — lỡ là
+  // mất. Phong bì mất gần một giây để hiện ra, nhạc về kịp trước khi kịp chạm.
+  const choNhac =
+    data.startOnEnvelopeOpen &&
+    data.hasMusic &&
+    audio.tracks.length === 0 &&
+    !hetChoNhac;
+
   const handleRequestOpen = useCallback(() => {
+    if (choNhac) return;
+
     // Nhạc phải bật NGAY ở đây, kể cả khi còn phải hỏi tên.
     //
     // iOS chỉ cho phát tiếng từ bên trong một cử chỉ thật của người dùng, mà
@@ -49,14 +79,14 @@ export function Landing({
     // là đã qua một lượt await, cử chỉ hết hiệu lực và nhạc sẽ câm. Nên cứ
     // bật từ cú chạm phong bì — nhạc chạy nền trong lúc cô ấy gõ tên cũng
     // hợp cảnh.
-    if (content.music.startOnEnvelopeOpen) audio.start();
+    if (data.startOnEnvelopeOpen) audio.start();
 
     if (needName) {
       setAsking(true);
       return;
     }
     setOpening(true);
-  }, [audio, content.music.startOnEnvelopeOpen, needName]);
+  }, [audio, choNhac, data.startOnEnvelopeOpen, needName]);
 
   // Trả lời đúng: đóng panel rồi mở phong bì luôn, không bắt chạm lại lần nữa.
   const handlePassed = useCallback(() => {
@@ -69,18 +99,19 @@ export function Landing({
 
   return (
     <main
-      style={fontVars(content.landing.fonts, content.landing.typography)}
+      style={fontVars(data.landing.fonts, data.landing.typography)}
       className="vignette relative flex min-h-svh flex-col items-center justify-center overflow-hidden px-6 pt-16 pb-[max(4rem,env(safe-area-inset-bottom))]"
     >
       <Ambience />
 
       <div className="relative z-10 w-full max-w-xl">
         <AnimatePresence mode="wait">
-          {locked && content.countdown.revealAt ? (
+          {locked && data.countdown.revealAt ? (
             <motion.div key="countdown" exit={{ opacity: 0, y: -20 }}>
               <Countdown
-                content={content.countdown}
-                targetIso={content.countdown.revealAt}
+                content={data.countdown}
+                targetIso={data.countdown.revealAt}
+                serverNow={serverNow}
                 onUnlock={unlock}
               />
             </motion.div>
@@ -93,34 +124,27 @@ export function Landing({
               className="flex flex-col items-center gap-8 text-center"
             >
               <h1 className="font-heading text-cream text-[calc(clamp(2.2rem,9vw,4.5rem)*var(--fz-heading,1))] leading-[1.15] text-balance drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]">
-                {content.landing.headline}
+                {data.landing.headline}
               </h1>
 
               <Envelope
-                monogram={content.recipientName.slice(0, 1).toUpperCase()}
+                monogram={data.recipientName.slice(0, 1).toUpperCase()}
                 opened={opening}
                 onRequestOpen={handleRequestOpen}
                 onFinished={handleFinished}
               />
 
-              <motion.p
-                animate={{ opacity: [0.55, 1, 0.55] }}
-                transition={{
-                  duration: 3.2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                className="font-accent text-cream/85 text-[calc(clamp(0.95rem,3.4vw,1.25rem)*var(--fz-accent,1))]"
-              >
-                {content.landing.subline}
-              </motion.p>
+              {/* Nhịp thở bằng CSS, không bằng motion: vòng lặp vô hạn. */}
+              <p className="breathe-opacity font-accent text-cream/85 text-[calc(clamp(0.95rem,3.4vw,1.25rem)*var(--fz-accent,1))]">
+                {data.landing.subline}
+              </p>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
       <NameGate
-        config={content.landing.passphrase}
+        config={data.landing.passphrase}
         open={asking}
         onPassed={handlePassed}
         onDismiss={() => setAsking(false)}

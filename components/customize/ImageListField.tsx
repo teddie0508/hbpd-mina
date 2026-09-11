@@ -27,7 +27,7 @@ export function ImageListField({
   onChange: (items: ImageAsset[]) => void;
   max: number;
   label: string;
-  /** Truyền xuống để mỗi ảnh có thêm ô ghi chú mặt sau. */
+  /** Truyền xuống để mỗi ảnh có thêm ô ghi chú, hiện dưới ảnh khi xem phóng to. */
   noteHint?: string;
 }) {
   const replaceAt = (index: number, image: ImageAsset) =>

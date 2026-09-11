@@ -1,13 +1,17 @@
 # Tiến độ — trang sinh nhật Mina
 
-Cập nhật: 04/09/2026. Sinh nhật: **02/11/2026**.
+Cập nhật: 11/09/2026. Sinh nhật: **02/11/2026**.
 
 ## Quyết định đã chốt
 
 | Việc | Chốt |
 |---|---|
 | Stack | Next.js 16.3.4 (App Router, TS) · React 19 · Tailwind v4 qua PostCSS · `motion` · `react-easy-crop` · `@vercel/blob` · `jose` · Prettier |
-| Lưu nội dung | **Vercel Blob** khi deploy; tự ghi ra `.data/content.json` khi chạy ở máy (không cần token) |
+| Lưu nội dung | **Vercel Blob** khi deploy; tự ghi ra `.data/content.json` khi chạy ở máy (không cần token). Tệp nội dung ghi **private** (lùi về public kèm cảnh báo nếu kho không nhận); ảnh/nhạc vẫn public vì `next/image` và `<audio>` cần URL đọc thẳng |
+| Dữ liệu xuống trình duyệt | Không bao giờ truyền cả `SiteContent` xuống client component. Mỗi màn chỉ nhận đúng phần của mình; trang bìa nhận `LandingData` qua `forLanding()` (danh sách cho phép, không có đáp án mật khẩu, không có lời nhắn/ảnh). Còn khoá thì layout cắt luôn danh sách nhạc |
+| Lưu từ /customize | Kiểm cấu trúc bằng `validateContent()` + chống ghi đè: gửi kèm `updatedAt` của bản đang sửa, trên kho có bản **mới hơn** thì báo xung đột, cho chọn "Tải bản mới nhất" hoặc "Vẫn lưu đè" |
+| Đăng nhập /customize | Sai 10 lần trong 10 phút → khoá 10 phút theo IP (bộ nhớ trong tiến trình, xem bẫy 35) |
+| Hoạt ảnh lặp vô hạn | CSS keyframes (`drift-y`, `balloon-bob`, `breathe-opacity`, `spin-slow`...), không dùng `motion` — `motion` chạy trên luồng chính |
 | Ngôn ngữ | Chủ yếu tiếng Việt, có chỗ trộn tiếng Anh → registry font đánh dấu font nào **không** có dấu tiếng Việt |
 | Cổng vào | **Đếm ngược tới 02/11/2026 00:00 +07:00**, tự mở khi về 0. Xem trước bằng `/?preview=1` (phải đã đăng nhập) |
 | Điều hướng | Route thật để nút Back và swipe-back của Safari hoạt động. `/hub`, `/message`, `/memories`, `/flowers` dựng **tĩnh** và được prefetch; chỉ `/` là động |
@@ -28,24 +32,31 @@ Cập nhật: 04/09/2026. Sinh nhật: **02/11/2026**.
 
 ```
 app/
-  layout.tsx                     theme + nạp Google Fonts động + ContentProvider
-  globals.css                    biến màu/font, utility font-*, sprockets, vignette
-  (experience)/                  phần Mina xem — AudioProvider; chỉ page.tsx là động
-    page.tsx  hub/  message/  memories/  flowers/
+  layout.tsx                     theme + nạp Google Fonts động (KHÔNG còn ContentProvider)
+  globals.css                    biến màu/font, utility font-*, keyframes lặp vô hạn, giấy thư
+  icon.png  apple-icon.png       favicon (chú gấu)
+  (experience)/                  phần Mina xem — AudioProvider (cắt nhạc khi còn khoá)
+    page.tsx  hub/  message/  memories/  flowers/  actions.ts (mật khẩu)
   customize/
     layout.tsx                   khung chung, KHÔNG chặn
     (editor)/layout.tsx          chốt chặn đăng nhập
     (editor)/page.tsx            trình sửa
+    (editor)/actions.ts          lưu (kiểm + chống ghi đè), lịch sử, dọn tệp
     login/page.tsx
-  api/auth  api/content  api/upload
+  api/auth (chặn sai 10 lần)  api/upload  api/upload-token
 components/
-  landing/  hub/  message/  memories/  flowers/  player/  providers/  ui/  customize/
+  landing/  hub/  message/  memories/  flowers/  player/  providers/  ui/  teddie/  customize/
 lib/
-  content/{schema,defaults,store}.ts
+  content/schema.ts              kiểu dữ liệu + forLanding()
+  content/store.ts               đọc/ghi Blob, nhớ tạm 30s cho người xem, lịch sử, dọn tệp
+  content/validate.ts            kiểm cấu trúc trước khi lưu
+  content/uploads.ts             gom đường dẫn tệp tải lên mà một bản lưu đang dùng
+  rate-limit.ts  useFocusTrap.ts  gate.ts  passphrase.ts  blob-paths.ts
   {fonts,theme,auth,placeholder,bouquet,crop,text,cx}.ts
+next.config.ts                   header chống nhúng iframe, nosniff, referrer
 ```
 
-## Ba mươi ba cái bẫy đã gặp, đừng dẫm lại
+## Ba mươi tám cái bẫy đã gặp, đừng dẫm lại
 
 1. **Không khai `--font-*` trong `@theme`.** Biến trong `@theme` nằm ở `:root` nên `var()` bị thay thế **ngay tại `:root`**; khối con đặt lại `--f-heading` sẽ vô tác dụng. Font phải khai bằng `@utility font-heading { font-family: var(--f-heading) }`.
 
@@ -116,6 +127,16 @@ lib/
 
 33. **Giữ 3 bản lưu là quá ít để có đường lùi.** Mỗi lần bấm Lưu ghi ra một file mới rồi dọn bớt bản cũ. Để `KEEP_VERSIONS = 3` thì lỡ tay ghi đè một bản hỏng, chỉ cần lưu thêm ba lần nữa là bản tốt cuối cùng bị dọn mất. Nay giữ 20 — mỗi bản vài chục KB, gần như không tốn gì. Kèm theo là mục **Lịch sử bản lưu** ở tab Chung của /customize: nạp một bản cũ ra thì nó chỉ vào trình sửa như bản nháp, phải tự bấm Lưu mới thành bản hiện hành, nên xem nhầm cũng không mất gì. `readVersion()` nhận đường dẫn từ trình duyệt gửi lên nên phải chặn: đúng tiền tố, và khớp `VERSION_RE` hoặc đúng bằng đường dẫn của bản cũ nhất.
 
+34. **Mọi prop truyền cho client component đều nằm nguyên văn trong HTML.** Layout gốc từng bọc cả cây trong `<ContentProvider value={content}>` — không component nào đọc nó, nhưng React vẫn phải chuyển nguyên `SiteContent` xuống trình duyệt. Hệ quả: trang bìa CÒN ĐANG ĐẾM NGƯỢC mà View Source là đọc được lá thư, ghi chú ảnh, và cả tên miền kho Blob lấy từ URL nhạc. `forClient()` chỉ cắt đáp án mật khẩu nên không cứu được. Cách sửa là danh sách **cho phép** (`forLanding()`), không phải danh sách cấm: thêm field mới vào schema thì mặc định không lọt xuống. Cách kiểm: đặt một chuỗi mồi vào lá thư, `curl` trang bìa không kèm cookie rồi grep chuỗi mồi và tên miền `blob.vercel-storage.com` — phải ra 0.
+
+35. **Chặn đăng nhập theo bộ nhớ trong tiến trình chỉ là "cố gắng hết sức" trên serverless.** Mỗi instance của Vercel có Map riêng, instance nguội là mất đếm. Đủ để chặn dò mật khẩu kiểu gõ tay hay script đơn giản; muốn chặt tuyệt đối thì phải có kho dùng chung (KV/Upstash). IP lấy từ `x-forwarded-for` — Vercel tự ghi đè header này nên người ngoài không giả được; chạy ở máy thì giả được, không sao.
+
+36. **Chống ghi đè phải so "mới hơn", không so "khác".** `list()` của Blob có lúc chưa thấy tệp vừa ghi, nên vừa lưu xong lưu tiếp ngay là máy chủ đọc ra bản cũ hơn mốc của trình sửa. So "khác" là báo xung đột oan đúng lúc đang lưu liên tục. Cùng lý do, lớp nhớ tạm cho người xem không được để bản đọc được cũ hơn đè lên bản đang nhớ.
+
+37. **Truyền thẳng hàm có tham số tuỳ chọn vào `onClick` là tự bắn vào chân.** `onClick={handleSave}` với `handleSave(force = false)` thì sự kiện click bị nhận làm `force` — một object, luôn truthy — nên lần nào bấm Lưu cũng là "lưu đè" và lớp chống ghi đè vô dụng mà không một dòng lỗi. Bọc trong arrow function.
+
+38. **Dọn tệp tải lên phải tính theo MỌI bản lưu trong lịch sử, và dừng nếu có bản không đọc được.** Chỉ tính bản hiện hành thì khôi phục một bản cũ là ảnh vỡ hết. Gom đường dẫn bằng cách quét mọi chuỗi trong JSON (`collectUploadPaths`) chứ không liệt kê từng chỗ có ảnh — liệt kê là sớm muộn quên một chỗ mới thêm vào schema, và tệp đang dùng bị xoá. Bỏ qua tệp tải lên trong 24 giờ (có thể nằm trong bản nháp chưa lưu), và tính lại danh sách ngay lúc xoá thay vì tin danh sách trình duyệt gửi lên.
+
 Ngoài ra: `placehold.co` mặc định trả SVG mà bộ tối ưu ảnh của Next chặn SVG — URL ảnh giữ chỗ phải có đuôi `.png`.
 
 ## Ghi chú công cụ
@@ -139,12 +160,16 @@ el.textContent = `
 
 - **Đừng lồng nhiều `setTimeout` trong một script khi đo thời gian ở pane.** Tab ẩn thì trình duyệt bóp các hẹn giờ lồng nhau xuống tối thiểu một giây, có lúc còn hơn — xin 250ms mà nhận về cả giây. Đo tính năng "sau 3 giây tự lật lại" kiểu `await 1500; await 2000` rồi ghi nhãn "sau 3,5s" là tự lừa mình: thực tế đã trôi qua bao lâu thì không biết. Phải đo bằng `performance.now()` và chỉ dùng MỘT phép chờ mỗi lần gọi.
 
+- **Phím bấm gửi vào pane ẩn có thể không tới trang, và hộp thoại đã đóng vẫn nằm trong DOM.** Kiểm khoá Tab bằng phím thật thì focus "đứng yên" — trông y như khoá chạy đúng mà thực ra sự kiện không hề tới. Phải tự bắn `new KeyboardEvent("keydown", { key: "Tab", cancelable: true })` từ một vị trí biết trước (đứng ở nút cuối, bắn Tab, xem có vòng về ô đầu không). Cùng lý do hoạt cảnh đứng, `AnimatePresence` không gỡ được hộp thoại vừa đóng — đếm `[role=dialog]` sau khi đóng vẫn ra 1; xem `document.body.style.overflow` hoặc focus đã về chỗ cũ chưa mới biết thật sự đã đóng.
+
 - **Script thay chuỗi in ra "ok" KHÔNG có nghĩa là nó đã thay được gì.** Chèn `<PhotoGallery>` vào JSX bằng một đoạn node replace, script chạy xong báo ok, mà mẫu tìm không khớp nên phần JSX không hề được chèn — tôi lại chỉ grep dòng `import` nên tưởng xong. Grep đúng THỨ mình vừa sửa, không grep thứ đi kèm nó.
 
 ## Việc còn lại
 
 - [ ] **Phase 7** — chạy thử thật trên Safari macOS + iOS: animation mở phong bì, mưa cánh hoa ở 120Hz, nhạc bật đúng lúc chạm, xoay ngang
 - [x] Đã deploy: a-special-gift-to-my-love.vercel.app · Blob store dùng chung, tiền tố `mina/` · region SIN1
+- [ ] **Đổi `AUTH_SECRET` trên Vercel** (một token phiên từng bị in ra trong lúc làm việc) rồi Redeploy — mọi phiên đăng nhập cũ sẽ mất hiệu lực
+- [ ] Sau lần lưu đầu tiên trên bản deploy: xem thông báo lưu có cảnh báo "vẫn lưu ở chế độ public" không. Không có thì tệp nội dung đã private, và bản cũ `site.json` public đã tự được chuyển thành `site-legacy.json` private
 
 `.data/` đã gitignore nên không bao giờ lên Vercel — bản deploy tự dùng mặc định trong `defaults.ts`, tức đếm ngược tới 02/11/2026 có hiệu lực ngay.
 

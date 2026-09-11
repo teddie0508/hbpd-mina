@@ -163,17 +163,17 @@ export function MiniPlayer() {
             }}
             className="text-gold hover:bg-gold/10 grid size-9 shrink-0 place-items-center rounded-full transition-colors"
           >
-            <motion.span
-              className="block size-5"
-              animate={{ rotate: audio.playing ? 360 : 0 }}
-              transition={
-                audio.playing
-                  ? { repeat: Infinity, ease: "linear", duration: 6 }
-                  : { duration: 0.3 }
-              }
+            {/* Xoay bằng CSS, không bằng motion: vòng lặp vô hạn thì phải nằm
+                ở luồng ghép ảnh. Tạm dừng bằng animation-play-state nên đĩa
+                đứng lại đúng góc đang quay, như đĩa than thật. */}
+            <span
+              className="spin-slow block size-5"
+              style={{
+                animationPlayState: audio.playing ? "running" : "paused",
+              }}
             >
               <DiscIcon />
-            </motion.span>
+            </span>
           </button>
         </motion.div>
 

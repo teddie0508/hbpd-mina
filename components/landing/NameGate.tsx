@@ -4,14 +4,16 @@ import {
   AnimatePresence,
   motion,
   useAnimationControls,
+  useIsPresent,
   useReducedMotion,
 } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { tryPassphrase } from "@/app/(experience)/actions";
-import type { PassphraseContent } from "@/lib/content/schema";
+import type { PublicPassphrase } from "@/lib/content/schema";
 import { cx } from "@/lib/cx";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 
 /**
  * Tấm thiệp nhỏ hỏi tên, hiện ra sau khi chạm phong bì.
@@ -20,6 +22,9 @@ import { cx } from "@/lib/cx";
  * `perspective`, mà bất kỳ tổ tiên nào có transform/filter/perspective cũng
  * biến thành containing block của `position: fixed`. Đứng ngoài <body> thì
  * chắc chắn phủ đúng cả màn hình.
+ *
+ * Nhận `PublicPassphrase` — tức KHÔNG có danh sách đáp án. Việc so đáp án nằm
+ * trong Server Action; đáp án không bao giờ xuống tới trình duyệt.
  */
 export function NameGate({
   config,
@@ -27,7 +32,7 @@ export function NameGate({
   onPassed,
   onDismiss,
 }: {
-  config: PassphraseContent;
+  config: PublicPassphrase;
   open: boolean;
   /** Trả lời đúng. Bên ngoài lo mở phong bì tiếp. */
   onPassed: () => void;
@@ -54,11 +59,12 @@ function GatePanel({
   onPassed,
   onDismiss,
 }: {
-  config: PassphraseContent;
+  config: PublicPassphrase;
   onPassed: () => void;
   onDismiss: () => void;
 }) {
   const reduced = useReducedMotion();
+  const khungRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState("");
   const [checking, setChecking] = useState(false);
@@ -70,6 +76,16 @@ function GatePanel({
   // ô nhập bên trong: mất con trỏ, và trên điện thoại là **sập bàn phím ngay
   // sau lần gõ sai đầu tiên**. Điều khiển thẳng thì không đụng gì tới DOM.
   const shake = useAnimationControls();
+
+  // Giữ Tab bên trong panel. Không tự đưa focus: ô nhập tự lo việc đó bên dưới,
+  // sau khi hoạt cảnh mở panel chạy xong.
+  //
+  // Bật theo `useIsPresent()` chứ không để `true`: đóng panel thì
+  // AnimatePresence còn giữ nó trong DOM cho chạy hết hoạt cảnh biến mất, nên
+  // gắn cứng `true` là focus phải chờ panel gỡ hẳn mới được trả về phong bì —
+  // trong lúc đó vẫn kẹt trong một panel đang mờ dần.
+  const present = useIsPresent();
+  useFocusTrap(khungRef, present, false);
 
   useEffect(() => {
     // Chờ hết hoạt cảnh mở panel rồi mới đưa con trỏ vào: bật bàn phím giữa
@@ -116,16 +132,20 @@ function GatePanel({
 
   return (
     <motion.div
+      ref={khungRef}
       className="fixed inset-0 z-[70] grid place-items-center px-6"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: reduced ? 0.15 : 0.35, ease: "easeOut" }}
     >
-      {/* Nền tối bấm được để đóng lại, phòng khi cô ấy muốn ngắm phong bì thêm. */}
+      {/* Nền tối bấm được để đóng lại, phòng khi cô ấy muốn ngắm phong bì thêm.
+          tabIndex -1: phủ kín màn hình mà vô hình, để Tab dừng ở đây thì
+          người dùng bàn phím không biết mình đang ở đâu. Đã có phím Esc. */}
       <button
         type="button"
         aria-label="Đóng"
+        tabIndex={-1}
         onClick={onDismiss}
         className="bg-base/80 absolute inset-0 cursor-default"
       />

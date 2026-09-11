@@ -497,7 +497,7 @@ export function MemoriesPanel({
         <SectionCard
           key={board.id}
           title={`Khối ảnh ${index + 1}`}
-          description={`Ảnh nền tỉ lệ ${SLOT_ASPECT.boardBackground}, ảnh nhỏ tỉ lệ ${SLOT_ASPECT.boardPhoto}. Ảnh nào có ghi chú thì chạm vào sẽ lật ra mặt sau.`}
+          description={`Ảnh nền tỉ lệ ${SLOT_ASPECT.boardBackground}, ảnh nhỏ tỉ lệ ${SLOT_ASPECT.boardPhoto}. Chạm vào ảnh là mở chế độ xem phóng to, ghi chú hiện ngay dưới ảnh.`}
         >
           <div className="flex items-center justify-between gap-3">
             <div className="flex-1">
@@ -892,7 +892,7 @@ export function TeddiePanel({
           />
           <TeddieSpotFields
             label="Kỷ niệm"
-            hint="Đây là chỗ duy nhất gợi ý được rằng ảnh lật xem được mặt sau."
+            hint="Đây là chỗ duy nhất gợi ý được rằng chạm vào ảnh là xem phóng to kèm ghi chú."
             value={value.memories}
             onChange={(patch) =>
               onChange({ memories: { ...value.memories, ...patch } })

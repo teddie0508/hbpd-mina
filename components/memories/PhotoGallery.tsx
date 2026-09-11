@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import Image from "next/image";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import {
@@ -10,6 +10,7 @@ import {
   ASPECT_VALUE,
   type ImageAsset,
 } from "@/lib/content/schema";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 
 /** Kéo ngang quá chừng này (px) thì tính là muốn lật sang tấm khác. */
 const SWIPE_PX = 70;
@@ -47,14 +48,17 @@ function RoundButton({
   onClick,
   className,
   children,
+  ref,
 }: {
   label: string;
   onClick: () => void;
   className?: string;
   children: React.ReactNode;
+  ref?: React.Ref<HTMLButtonElement>;
 }) {
   return (
     <button
+      ref={ref}
       type="button"
       onClick={onClick}
       aria-label={label}
@@ -89,6 +93,13 @@ export function PhotoGallery({
   useEffect(() => setMounted(true), []);
 
   const open = index !== null;
+  const khungRef = useRef<HTMLDivElement>(null);
+  const nutDongRef = useRef<HTMLButtonElement>(null);
+
+  // Mở ra thì focus vào nút Đóng — nút dễ đoán nhất, và Esc/mũi tên vẫn chạy
+  // bất kể focus đang ở đâu. Đóng lại thì focus về đúng tấm ảnh vừa bấm, để
+  // người dùng bàn phím Tab tiếp sang tấm kế bên chứ không bị ném về đầu trang.
+  useFocusTrap(khungRef, open && mounted, nutDongRef);
 
   const step = useCallback(
     (delta: number) => {
@@ -138,6 +149,7 @@ export function PhotoGallery({
       {photo ? (
         <motion.div
           key="gallery"
+          ref={khungRef}
           role="dialog"
           aria-modal="true"
           aria-label="Xem ảnh phóng to"
@@ -171,10 +183,13 @@ export function PhotoGallery({
             ))}
           </div>
 
-          {/* Bấm ra vùng trống là đóng. Nút phủ kín nền, ảnh nằm đè lên trên. */}
+          {/* Bấm ra vùng trống là đóng. Nút phủ kín nền, ảnh nằm đè lên trên.
+              Bỏ khỏi thứ tự Tab: vô hình và phủ kín màn hình, dừng ở đây thì
+              người dùng bàn phím không biết mình đang ở đâu. */}
           <button
             type="button"
             aria-label="Đóng"
+            tabIndex={-1}
             onClick={onClose}
             className="absolute inset-0 cursor-zoom-out"
           />
@@ -209,7 +224,7 @@ export function PhotoGallery({
           </div>
 
           <div className="pointer-events-auto absolute top-0 right-0 p-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:p-4">
-            <RoundButton label="Đóng" onClick={onClose}>
+            <RoundButton label="Đóng" onClick={onClose} ref={nutDongRef}>
               <svg
                 viewBox="0 0 24 24"
                 fill="none"

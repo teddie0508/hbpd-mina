@@ -1,7 +1,5 @@
 import type { Metadata, Viewport } from "next";
 
-import { ContentProvider } from "@/components/providers/ContentProvider";
-import { forClient } from "@/lib/content/schema";
 import { getContent } from "@/lib/content/store";
 import { googleFontsHref } from "@/lib/fonts";
 import { themeVars, usedFontKeys } from "@/lib/theme";
@@ -25,6 +23,15 @@ export const viewport: Viewport = {
   themeColor: "#06100f",
 };
 
+/**
+ * Layout gốc chỉ lấy từ nội dung đúng hai thứ vô hại: bảng màu và tên font.
+ *
+ * Từng bọc cả cây trong một <ContentProvider value={content}>. Không component
+ * nào đọc provider đó, nhưng nó vẫn đẩy TOÀN BỘ nội dung vào HTML của mọi
+ * trang — kể cả màn đếm ngược, trang duy nhất người lạ vào được trước ngày
+ * mở. Kiểm bằng curl với một chuỗi bí mật cài vào lá thư: nó hiện nguyên
+ * trong HTML dù trang đang khoá. Đã gỡ hẳn; đừng đặt lại.
+ */
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -46,11 +53,7 @@ export default async function RootLayout({
           </>
         ) : null}
       </head>
-      <body className="antialiased">
-        {/* forClient(): nội dung đưa vào provider nằm nguyên trong HTML gửi
-            xuống, nên phải cắt đáp án của lớp hỏi tên trước. */}
-        <ContentProvider value={forClient(content)}>{children}</ContentProvider>
-      </body>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }

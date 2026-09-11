@@ -1,8 +1,7 @@
 "use client";
 
-import { motion } from "motion/react";
 import Image from "next/image";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 import { ASPECT_CSS, type ImageAsset } from "@/lib/content/schema";
 import { cx } from "@/lib/cx";
@@ -10,6 +9,12 @@ import { cx } from "@/lib/cx";
 /**
  * Khung ảnh kiểu Polaroid: viền giấy dày, đáy dày hơn để có chỗ ghi chú.
  * Ảnh giữ đúng tỉ lệ đã cắt lúc tải lên nên không bao giờ bị méo.
+ *
+ * Lơ lửng bằng CSS keyframes chứ không bằng motion: đây là vòng lặp vô hạn,
+ * mà trang Lời nhắn có tới năm tấm cùng trôi — năm vòng lặp trên luồng chính.
+ * Góc nghiêng truyền vào qua --tilt vì CSS animation ghi đè toàn bộ transform:
+ * không nhồi góc nghiêng vào keyframe thì tấm ảnh bị dựng thẳng đứng ngay lúc
+ * bắt đầu trôi.
  */
 export function Polaroid({
   image,
@@ -32,24 +37,27 @@ export function Polaroid({
   float?: boolean;
   floatDelay?: number;
 }) {
+  const style = {
+    "--tilt": `${rotate}deg`,
+    // Tư thế tĩnh khi không trôi; khi trôi thì keyframe drift-y lo, và nó
+    // cũng đọc cùng --tilt nên hai bên luôn khớp góc.
+    transform: `rotate(${rotate}deg)`,
+    ...(float
+      ? {
+          "--float-dur": `${7 + floatDelay}s`,
+          "--float-delay": `${floatDelay}s`,
+        }
+      : {}),
+  } as CSSProperties;
+
   return (
-    <motion.figure
+    <figure
       className={cx(
         "bg-paper gpu relative m-0 rounded-[3px] p-[5%] pb-[13%] shadow-[0_10px_30px_-8px_rgba(0,0,0,0.55)]",
+        float && "drift-y",
         className,
       )}
-      style={{ rotate: `${rotate}deg` }}
-      animate={float ? { y: [0, -9, 0] } : undefined}
-      transition={
-        float
-          ? {
-              duration: 7 + floatDelay,
-              delay: floatDelay,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }
-          : undefined
-      }
+      style={style}
     >
       <div
         className="bg-ink/10 relative w-full overflow-hidden"
@@ -71,6 +79,6 @@ export function Polaroid({
           {caption}
         </figcaption>
       ) : null}
-    </motion.figure>
+    </figure>
   );
 }

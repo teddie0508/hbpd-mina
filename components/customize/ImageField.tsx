@@ -32,7 +32,7 @@ export function ImageField({
   onChange: (image: ImageAsset) => void;
   onRemove?: () => void;
   label?: string;
-  /** Có giá trị thì hiện thêm ô ghi chú mặt sau, dùng làm gợi ý trong ô. */
+  /** Có giá trị thì hiện thêm ô ghi chú (hiện dưới ảnh khi xem phóng to), dùng làm gợi ý trong ô. */
   noteHint?: string;
 }) {
   const aspect = SLOT_ASPECT[slot];

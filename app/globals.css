@@ -39,6 +39,72 @@
   animation: trail-drift 2.6s linear infinite;
 }
 
+/* ------------------------------------------------------------------------
+   Các vòng lặp vô hạn, tất cả đều bằng CSS keyframes chứ không bằng motion.
+   Lặp mãi thì phải nằm ở luồng ghép ảnh; để trên luồng chính là thứ đã từng
+   làm iPhone khựng. Máy bật "giảm chuyển động" thì khối prefers-reduced-motion
+   ở đầu file đã rút animation về gần 0 — kèm `both` bên dưới, phần tử dừng ở
+   đúng tư thế gốc (vẫn giữ góc nghiêng) chứ không giật về thẳng đứng.
+   ------------------------------------------------------------------------ */
+
+/* Lơ lửng lên xuống: polaroid, phong bì khoá trên màn đếm ngược.
+   Góc nghiêng sẵn có truyền vào qua --tilt, vì CSS animation ghi đè TOÀN BỘ
+   thuộc tính transform — không nhồi góc nghiêng vào keyframe thì tấm ảnh đang
+   nghiêng bị dựng thẳng đứng ngay lúc bắt đầu trôi. */
+@keyframes drift-y {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(var(--tilt, 0deg));
+  }
+  50% {
+    transform: translate3d(0, var(--float-y, -9px), 0) rotate(var(--tilt, 0deg));
+  }
+}
+@utility drift-y {
+  animation: drift-y var(--float-dur, 7s) ease-in-out var(--float-delay, 0s)
+    infinite both;
+}
+
+/* Bóng bay trái tim: trôi lên xuống, lắc nhẹ quanh góc nghiêng riêng --r. */
+@keyframes balloon-bob {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(var(--r, 0deg));
+  }
+  50% {
+    transform: translate3d(0, -22px, 0) rotate(calc(var(--r, 0deg) + 6deg));
+  }
+}
+@utility balloon-bob {
+  animation: balloon-bob var(--dur, 9s) ease-in-out var(--delay, 0s) infinite
+    both;
+}
+
+/* Nhịp thở bằng độ mờ, cho dòng chữ dưới phong bì. */
+@keyframes breathe-opacity {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@utility breathe-opacity {
+  animation: breathe-opacity 3.2s ease-in-out infinite;
+}
+
+/* Đĩa than xoay. Dừng bằng animation-play-state thay vì gỡ animation, để đĩa
+   đứng lại đúng góc đang quay như đĩa thật, không giật về 0°. */
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@utility spin-slow {
+  animation: spin-slow 6s linear infinite;
+}
+
 /* Ngôi sao nhỏ cạnh dòng chữ bí mật, nhấp nháy rất chậm.
    Cả sức hút của nút đó dồn vào MỘT ngôi sao 14px nhấp nháy, còn dòng chữ
    thì đứng yên — như vậy mắt vẫn bắt được là có gì ở đây, mà không hét vào
