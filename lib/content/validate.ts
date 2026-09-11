@@ -152,6 +152,7 @@ const styled = { fonts: fontSet, typography: typeSet };
 const siteContent = shape({
   recipientName: text(100),
   documentTitle: text(200),
+  shareDescription: text(300),
 
   theme: shape({
     base: color,

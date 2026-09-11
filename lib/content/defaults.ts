@@ -45,6 +45,7 @@ export const DEFAULT_CONTENT: SiteContent = {
   updatedAt: new Date(0).toISOString(),
   recipientName: "Mina",
   documentTitle: "For Mina",
+  shareDescription: "Có một thứ đang đợi em.",
 
   theme: DEFAULT_THEME,
 

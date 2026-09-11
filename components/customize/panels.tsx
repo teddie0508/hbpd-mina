@@ -90,10 +90,22 @@ export function GeneralPanel({
             onChange={(recipientName) => onChange({ recipientName })}
           />
         </Field>
-        <Field label="Tiêu đề tab trình duyệt">
+        <Field
+          label="Tiêu đề tab trình duyệt"
+          hint="Cũng là tiêu đề trong thẻ xem trước khi gửi link."
+        >
           <TextInput
             value={content.documentTitle}
             onChange={(documentTitle) => onChange({ documentTitle })}
+          />
+        </Field>
+        <Field
+          label="Mô tả khi gửi link"
+          hint="Dòng nhỏ dưới tiêu đề khi dán link vào Messenger, Zalo... Ai có link cũng thấy, kể cả trước ngày mở, nên đừng viết gì lộ bất ngờ. Messenger và Zalo nhớ thẻ xem trước khá lâu: đổi xong có thể phải chờ họ cập nhật."
+        >
+          <TextInput
+            value={content.shareDescription}
+            onChange={(shareDescription) => onChange({ shareDescription })}
           />
         </Field>
       </SectionCard>

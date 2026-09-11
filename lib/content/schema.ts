@@ -300,6 +300,12 @@ export interface SiteContent {
   updatedAt: string;
   recipientName: string;
   documentTitle: string;
+  /**
+   * Dòng mô tả dưới tiêu đề trong thẻ xem trước khi gửi link (Messenger,
+   * Zalo...). Ai có link cũng thấy, kể cả trước ngày mở — đừng viết gì lộ
+   * bất ngờ. Ảnh của thẻ là app/opengraph-image.png.
+   */
+  shareDescription: string;
   theme: ThemeColors;
   countdown: CountdownContent;
   landing: LandingContent;
