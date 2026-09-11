@@ -21,7 +21,10 @@ import {
   MessagePanel,
   MusicPanel,
   TeddiePanel,
+  WaitingTeddiePanel,
 } from "./panels";
+import { InboxPanel } from "./InboxPanel";
+import { RehearsalCard } from "./RehearsalCard";
 import { StorageProvider } from "./upload";
 import { UploadCleanup } from "./UploadCleanup";
 import { VersionHistory } from "./VersionHistory";
@@ -35,6 +38,8 @@ const TABS = [
   { key: "flowers", label: "Hoa" },
   { key: "music", label: "Nhạc" },
   { key: "teddie", label: "Gấu" },
+  { key: "waiting", label: "Gấu chờ" },
+  { key: "inbox", label: "Hồi âm" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -80,11 +85,14 @@ export function EditorShell({
   initial,
   storage,
   asGuest,
+  rehearsalAt,
 }: {
   initial: SiteContent;
   storage: "blob" | "local";
   /** Đang tạm bỏ đặc quyền để xem đúng những gì Mina thấy. */
   asGuest: boolean;
+  /** Mốc mở khoá giả của buổi diễn tập đang chạy, hoặc null. */
+  rehearsalAt: string | null;
 }) {
   const router = useRouter();
   const [draft, setDraft] = useState<SiteContent>(initial);
@@ -262,6 +270,7 @@ export function EditorShell({
         <main className="mt-5">
           {tab === "general" ? (
             <div className="mb-5 space-y-5">
+              <RehearsalCard rehearsalAt={rehearsalAt} />
               <VersionHistory onLoad={(khoiPhuc) => setDraft(khoiPhuc)} />
               <UploadCleanup />
             </div>
@@ -309,6 +318,27 @@ export function EditorShell({
             <TeddiePanel
               value={draft.teddie}
               onChange={(p) => patch({ teddie: { ...draft.teddie, ...p } })}
+            />
+          ) : null}
+          {tab === "waiting" ? (
+            <WaitingTeddiePanel
+              value={draft.waitingTeddie}
+              onChange={(p) =>
+                patch({ waitingTeddie: { ...draft.waitingTeddie, ...p } })
+              }
+            />
+          ) : null}
+          {tab === "inbox" ? (
+            <InboxPanel
+              value={draft.flowers.reply}
+              onChange={(p) =>
+                patch({
+                  flowers: {
+                    ...draft.flowers,
+                    reply: { ...draft.flowers.reply, ...p },
+                  },
+                })
+              }
             />
           ) : null}
         </main>

@@ -17,7 +17,14 @@ import {
   type UnusedUpload,
 } from "@/lib/content/store";
 import { validateContent } from "@/lib/content/validate";
-import { GUEST_COOKIE, GUEST_MAX_AGE } from "@/lib/gate";
+import {
+  GUEST_COOKIE,
+  GUEST_MAX_AGE,
+  PASS_COOKIE,
+  REHEARSAL_COOKIE,
+  REHEARSAL_MAX_AGE,
+} from "@/lib/gate";
+import { deleteEntry, listEntries, type InboxEntry } from "@/lib/inbox";
 
 const HET_PHIEN = "Phiên đăng nhập đã hết hạn. Tải lại trang và đăng nhập lại.";
 
@@ -168,6 +175,82 @@ export async function loadSavedVersion(pathname: string): Promise<{
       ok: false,
       error:
         error instanceof Error ? error.message : "Không đọc được bản lưu này.",
+    };
+  }
+}
+
+/**
+ * Diễn tập 0h: cho trang bìa đếm ngược tới một mốc giả vài chục giây nữa.
+ *
+ * Không đụng tới nội dung đã lưu — chỉ đặt cookie, và cookie đó chỉ có tác
+ * dụng khi đã đăng nhập (xem `rehearsalRevealAt`). Kèm theo: bật "xem như Mina"
+ * và xoá cookie đã trả lời tên, để đi lại đúng từng bước như lần đầu.
+ */
+export async function startRehearsal(
+  seconds: number,
+): Promise<{ ok: boolean; error?: string }> {
+  if (!(await isEditor())) return { ok: false, error: HET_PHIEN };
+  if (
+    typeof seconds !== "number" ||
+    !Number.isFinite(seconds) ||
+    seconds < 5 ||
+    seconds > 600
+  ) {
+    return { ok: false, error: "Số giây không hợp lệ." };
+  }
+
+  const jar = await cookies();
+  jar.set(REHEARSAL_COOKIE, String(Date.now() + Math.round(seconds) * 1000), {
+    path: "/",
+    sameSite: "lax",
+    httpOnly: true,
+    maxAge: REHEARSAL_MAX_AGE,
+  });
+  jar.set(GUEST_COOKIE, "1", {
+    path: "/",
+    sameSite: "lax",
+    maxAge: GUEST_MAX_AGE,
+  });
+  jar.delete(PASS_COOKIE);
+  return { ok: true };
+}
+
+export async function endRehearsal(): Promise<void> {
+  if (!(await isEditor())) return;
+  const jar = await cookies();
+  jar.delete(REHEARSAL_COOKIE);
+  jar.delete(GUEST_COOKIE);
+}
+
+/** Thư Mina gửi và nhật ký. */
+export async function listInbox(): Promise<{
+  ok: boolean;
+  entries?: InboxEntry[];
+  error?: string;
+}> {
+  if (!(await isEditor())) return { ok: false, error: HET_PHIEN };
+  try {
+    return { ok: true, entries: await listEntries() };
+  } catch (error) {
+    console.error("[inbox] không đọc được hộp thư:", error);
+    return { ok: false, error: "Không đọc được hộp thư." };
+  }
+}
+
+export async function deleteInboxEntry(
+  pathname: string,
+): Promise<{ ok: boolean; error?: string }> {
+  if (!(await isEditor())) return { ok: false, error: HET_PHIEN };
+  if (typeof pathname !== "string") {
+    return { ok: false, error: "Đường dẫn không hợp lệ." };
+  }
+  try {
+    await deleteEntry(pathname);
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Không xoá được.",
     };
   }
 }

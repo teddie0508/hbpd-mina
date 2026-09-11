@@ -5,6 +5,26 @@ import { cookies } from "next/headers";
 import { isEditor } from "./auth";
 import { getContent } from "./content/store";
 
+/** Cookie của buổi diễn tập 0h: giá trị là mốc mở khoá giả, tính bằng ms. */
+export const REHEARSAL_COOKIE = "mina_rehearsal";
+/** Buổi diễn tập tự hết hạn sau chừng này, lỡ quên bấm kết thúc cũng không sao. */
+export const REHEARSAL_MAX_AGE = 15 * 60;
+
+/**
+ * Mốc mở khoá của buổi diễn tập đang chạy, hoặc null.
+ *
+ * CHỈ tính cho người đã đăng nhập. Cookie này ai cũng tự đặt được trong trình
+ * duyệt của mình, nên nếu không kiểm đăng nhập thì người ngoài chỉ cần đặt nó
+ * về một mốc trong quá khứ là mở khoá được trang trước ngày.
+ */
+export async function rehearsalRevealAt(): Promise<string | null> {
+  const raw = (await cookies()).get(REHEARSAL_COOKIE)?.value;
+  const at = Number(raw);
+  if (!raw || !Number.isFinite(at)) return null;
+  if (!(await isEditor())) return null;
+  return new Date(at).toISOString();
+}
+
 /**
  * Trang đã mở khoá chưa.
  *
@@ -16,6 +36,11 @@ import { getContent } from "./content/store";
  * cố tình chịu khoá như người ngoài để kiểm tra xem cổng có thật sự đóng.
  */
 export async function isLocked(): Promise<boolean> {
+  // Đang diễn tập thì khoá theo mốc giả, và chịu khoá như người ngoài bất kể
+  // công tắc "xem như Mina" đang ở đâu — diễn tập là để thấy đúng cảnh Mina thấy.
+  const rehearsal = await rehearsalRevealAt();
+  if (rehearsal) return Date.now() < Date.parse(rehearsal);
+
   const content = await getContent();
   const revealAt = content.countdown.revealAt;
 

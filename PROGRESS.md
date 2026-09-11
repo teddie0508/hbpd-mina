@@ -12,6 +12,9 @@ Cập nhật: 11/09/2026. Sinh nhật: **02/11/2026**.
 | Lưu từ /customize | Kiểm cấu trúc bằng `validateContent()` + chống ghi đè: gửi kèm `updatedAt` của bản đang sửa, trên kho có bản **mới hơn** thì báo xung đột, cho chọn "Tải bản mới nhất" hoặc "Vẫn lưu đè" |
 | Đăng nhập /customize | Sai 10 lần trong 10 phút → khoá 10 phút theo IP (bộ nhớ trong tiến trình, xem bẫy 35) |
 | Hoạt ảnh lặp vô hạn | CSS keyframes (`drift-y`, `balloon-bob`, `breathe-opacity`, `spin-slow`...), không dùng `motion` — `motion` chạy trên luồng chính |
+| Diễn tập 0h | Tab Chung → cookie `mina_rehearsal` (mốc mở khoá giả) + bật xem như Mina + xoá cookie đã trả lời tên. **Chỉ có tác dụng khi đã đăng nhập** — người ngoài tự đặt cookie này cũng không mở được trang sớm. Nội dung đã lưu không đổi; tự hết sau 15 phút |
+| Hồi âm | Ô viết thư cuối trang Hoa (`flowers.reply`) → `lib/inbox.ts`, mỗi thư/dòng nhật ký là **một tệp riêng** dưới `mina/inbox/` (private), không nằm trong nội dung. Gửi được chỉ khi `!isSealed()`, 10 lượt/10 phút/IP, tối đa 500 mục. Nhật ký: mở phong bì, tới màn kết — không ghi khi bạn đăng nhập xem bình thường, có ghi (nhãn "bạn xem thử") khi xem như Mina/diễn tập |
+| Gấu chờ | `waitingTeddie` — máy chủ bốc 1 ảnh + 1 câu mỗi lần tải trang, chỉ khi còn khoá; bỏ qua ảnh placehold.co; font và dòng nhắc dùng chung với tab Gấu |
 | Ngôn ngữ | Chủ yếu tiếng Việt, có chỗ trộn tiếng Anh → registry font đánh dấu font nào **không** có dấu tiếng Việt |
 | Cổng vào | **Đếm ngược tới 02/11/2026 00:00 +07:00**, tự mở khi về 0. Xem trước bằng `/?preview=1` (phải đã đăng nhập) |
 | Điều hướng | Route thật để nút Back và swipe-back của Safari hoạt động. `/hub`, `/message`, `/memories`, `/flowers` dựng **tĩnh** và được prefetch; chỉ `/` là động |
@@ -51,7 +54,9 @@ lib/
   content/store.ts               đọc/ghi Blob, nhớ tạm 30s cho người xem, lịch sử, dọn tệp
   content/validate.ts            kiểm cấu trúc trước khi lưu
   content/uploads.ts             gom đường dẫn tệp tải lên mà một bản lưu đang dùng
-  rate-limit.ts  useFocusTrap.ts  gate.ts  passphrase.ts  blob-paths.ts
+  inbox.ts                       hộp thư: thư Mina gửi + nhật ký, mỗi mục một tệp
+  moments.ts                     ghi nhật ký từ trình duyệt, mỗi loại một lần/tab
+  rate-limit.ts  useFocusTrap.ts  gate.ts (khoá, hỏi tên, diễn tập)  passphrase.ts  blob-paths.ts
   {fonts,theme,auth,placeholder,bouquet,crop,text,cx}.ts
 next.config.ts                   header chống nhúng iframe, nosniff, referrer
 ```

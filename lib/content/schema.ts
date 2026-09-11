@@ -203,6 +203,19 @@ export interface MemoriesContent {
   typography: TypeSet;
 }
 
+/**
+ * Ô viết thư ở cuối trang Hoa, để Mina nhắn lại vài dòng.
+ * Thư gửi đi nằm trong hộp thư riêng (lib/inbox.ts), KHÔNG nằm trong nội dung.
+ */
+export interface ReplyContent {
+  enabled: boolean;
+  title: string;
+  placeholder: string;
+  sendLabel: string;
+  /** Hiện ra thay cho ô viết sau khi gửi xong. */
+  thanks: string;
+}
+
 export interface FlowersContent {
   heading: string;
   intro: string;
@@ -214,6 +227,7 @@ export interface FlowersContent {
     caption: string;
     closing: string;
   };
+  reply: ReplyContent;
   fonts: FontSet;
   typography: TypeSet;
 }
@@ -256,6 +270,19 @@ export interface TeddieContent {
   typography: TypeSet;
 }
 
+/**
+ * Gấu đứng ở màn đếm ngược, cho những ngày chờ đỡ trống.
+ *
+ * Mỗi lần tải trang, máy chủ bốc ngẫu nhiên MỘT ảnh và MỘT câu (xem
+ * `pickWaitingTeddie`). Bốc ở máy chủ chứ không ở trình duyệt: bốc ở trình
+ * duyệt thì HTML hai bên lệch nhau, và cả hai danh sách phải gửi xuống hết.
+ */
+export interface WaitingTeddieContent {
+  enabled: boolean;
+  images: ImageAsset[];
+  lines: string[];
+}
+
 export interface MusicContent {
   /** Nhạc luôn cần một cú chạm để phát (trình duyệt chặn autoplay); cú chạm đó là lúc mở phong bì. */
   startOnEnvelopeOpen: boolean;
@@ -282,6 +309,7 @@ export interface SiteContent {
   flowers: FlowersContent;
   music: MusicContent;
   teddie: TeddieContent;
+  waitingTeddie: WaitingTeddieContent;
 }
 
 /** Lớp hỏi tên, bỏ danh sách đáp án. */
@@ -347,6 +375,46 @@ export const MAX_BOARD_PHOTOS = 8;
 export const MAX_FILMSTRIP_PHOTOS = 6;
 export const MAX_BOARDS = 6;
 export const MAX_TRACKS = 12;
+export const MAX_WAITING_TEDDIE_IMAGES = 8;
+export const MAX_WAITING_TEDDIE_LINES = 60;
+/** Thư Mina gửi lại: đủ dài cho vài đoạn, không đủ để ai đó đổ rác vào kho. */
+export const MAX_REPLY_CHARS = 2000;
+
+/** Gấu ở màn đếm ngược đã được bốc sẵn cho lần tải trang này. */
+export interface WaitingTeddiePick {
+  spot: TeddieSpot;
+  fonts: FontSet;
+  typography: TypeSet;
+  tapHint: string;
+}
+
+/**
+ * Bốc ngẫu nhiên một ảnh và một câu cho gấu ở màn đếm ngược.
+ *
+ * Bỏ qua ảnh giữ chỗ: nút "Thêm ảnh" ở /customize chèn sẵn một ô placehold.co,
+ * chưa kịp tải ảnh thật mà lưu thì Mina sẽ thấy một ô vuông xám thay cho gấu.
+ * Giọng nói (font) và dòng nhắc dùng chung với gấu ở các trang trong — cùng
+ * một nhân vật.
+ */
+export function pickWaitingTeddie(
+  content: SiteContent,
+): WaitingTeddiePick | null {
+  const { enabled, images, lines } = content.waitingTeddie;
+  const anhThat = images.filter(
+    (img) => !img.url.startsWith("https://placehold.co/"),
+  );
+  const cau = lines.map((l) => l.trim()).filter(Boolean);
+  if (!enabled || anhThat.length === 0) return null;
+
+  const boc = <T>(xs: T[]): T => xs[Math.floor(Math.random() * xs.length)];
+
+  return {
+    spot: { image: boc(anhThat), lines: cau.length > 0 ? [boc(cau)] : [] },
+    fonts: content.teddie.fonts,
+    typography: content.teddie.typography,
+    tapHint: content.teddie.tapHint,
+  };
+}
 
 /** Tỉ lệ bắt buộc cho từng chỗ dùng ảnh — khung cắt ở /customize đọc bảng này. */
 export const SLOT_ASPECT = {

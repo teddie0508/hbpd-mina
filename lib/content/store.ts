@@ -97,7 +97,7 @@ function isLegacyPath(pathname: string): boolean {
  * Không có thì ghi ra .data/content.json ngay trong máy, để `npm run dev`
  * chạy được mà không cần cấu hình gì.
  */
-function usingBlob(): boolean {
+export function usingBlob(): boolean {
   return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 }
 
@@ -112,7 +112,7 @@ export function storageMode(): "blob" | "local" {
  * nhất — nếu vì lý do gì số tệp vượt một trang, chỉ đọc trang đầu là đọc trúng
  * bản CŨ. Đi hết các trang thì không bao giờ dính.
  */
-async function listAll(prefix: string): Promise<BlobRef[]> {
+export async function listAll(prefix: string): Promise<BlobRef[]> {
   const out: BlobRef[] = [];
   let cursor: string | undefined;
   do {
@@ -182,7 +182,7 @@ async function readPrivateJson(pathname: string): Promise<unknown | null> {
  * Bản lưu mới là private, bản lưu cũ là public. Thử đường private trước —
  * đó là đường của bản hiện hành — hỏng thì lùi về đọc thẳng URL công khai.
  */
-async function readBlobJson(blob: {
+export async function readBlobJson(blob: {
   pathname: string;
   url: string;
 }): Promise<unknown | null> {
@@ -205,7 +205,7 @@ async function readBlobJson(blob: {
  * làm phòng thủ: kho không nhận private thì vẫn lưu được ở chế độ public, và
  * bên gọi được báo lại để hiện cảnh báo — chứ không bao giờ để nút Lưu hỏng.
  */
-async function putJson(
+export async function putJson(
   pathname: string,
   body: string,
 ): Promise<"private" | "public"> {

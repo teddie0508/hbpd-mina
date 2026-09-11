@@ -6,6 +6,8 @@ import {
   MAX_FILMSTRIP_PHOTOS,
   MAX_MESSAGE_PHOTOS,
   MAX_TRACKS,
+  MAX_WAITING_TEDDIE_IMAGES,
+  MAX_WAITING_TEDDIE_LINES,
   SLOT_ASPECT,
   type FlowersContent,
   type HubContent,
@@ -20,6 +22,7 @@ import {
   type SiteContent,
   type ThemeColors,
   type Track,
+  type WaitingTeddieContent,
 } from "@/lib/content/schema";
 import { placeholderImage } from "@/lib/placeholder";
 
@@ -915,6 +918,56 @@ export function TeddiePanel({
             sampleText={value.flowers.lines[0] || "Chọn đi em nhé"}
           />
         </div>
+      ) : null}
+    </SectionCard>
+  );
+}
+
+export function WaitingTeddiePanel({
+  value,
+  onChange,
+}: {
+  value: WaitingTeddieContent;
+  onChange: Patch<WaitingTeddieContent>;
+}) {
+  const soCau = value.lines.filter((l) => l.trim()).length;
+
+  return (
+    <SectionCard
+      title="Gấu ở màn đếm ngược"
+      description="Trong những ngày chờ, mỗi lần Mina mở trang hay tải lại, gấu hiện ra ở góc dưới với MỘT ảnh và MỘT câu bốc ngẫu nhiên từ hai danh sách dưới đây. Tới giờ mở khoá thì gấu này lui đi. Font chữ và dòng nhắc chỉ vào gấu dùng chung với tab Gấu."
+    >
+      <Toggle
+        checked={value.enabled}
+        onChange={(enabled) => onChange({ enabled })}
+        label="Cho gấu đứng ở màn đếm ngược"
+      />
+
+      {value.enabled ? (
+        <>
+          <ImageListField
+            slot="teddie"
+            items={value.images}
+            onChange={(images) => onChange({ images })}
+            max={MAX_WAITING_TEDDIE_IMAGES}
+            label="Ảnh gấu"
+          />
+          <p className="text-mist/50 -mt-2 text-[11px] leading-relaxed">
+            Ô nào còn là ảnh giữ chỗ (chưa tải ảnh thật lên) sẽ bị bỏ qua khi
+            bốc. Chưa có ảnh thật nào thì màn đếm ngược không có gấu.
+          </p>
+
+          <Field
+            label={`Lời thoại (${soCau}/${MAX_WAITING_TEDDIE_LINES})`}
+            hint="Mỗi dòng là một câu riêng — khác tab Gấu, ở đây mỗi lần chỉ hiện một câu."
+          >
+            <LinesArea
+              rows={8}
+              value={value.lines}
+              onChange={(lines) => onChange({ lines })}
+            />
+          </Field>
+        </>
       ) : null}
     </SectionCard>
   );

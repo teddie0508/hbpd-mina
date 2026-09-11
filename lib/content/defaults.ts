@@ -149,6 +149,13 @@ export const DEFAULT_CONTENT: SiteContent = {
         "Thật ra sau này, anh có tặng em hàng chục hàng trăm bó hoa đi nữa, cũng chỉ để nhận ra rằng: em mới là bông hoa đẹp nhất.",
       closing: "Chúc mừng sinh nhật, Mina.",
     },
+    reply: {
+      enabled: true,
+      title: "Em có muốn nhắn lại gì cho anh không?",
+      placeholder: "Viết gì cũng được, chỉ mình anh đọc thôi...",
+      sendLabel: "Gửi cho anh",
+      thanks: "Anh nhận được rồi nè. Cảm ơn em nhiều lắm ♥",
+    },
     fonts: { heading: "dancing", body: "mali", accent: "cormorant" },
     typography: baseType(),
   },
@@ -181,6 +188,18 @@ export const DEFAULT_CONTENT: SiteContent = {
     // đọc được ở cỡ nhỏ — đúng thứ một bong bóng thoại cần.
     fonts: { heading: "mali", body: "mali", accent: "mali" },
     typography: baseType(),
+  },
+
+  // Chưa có ảnh thì màn đếm ngược không có gấu, giống gấu ở các trang trong.
+  waitingTeddie: {
+    enabled: true,
+    images: [],
+    lines: [
+      "Chưa tới đâu, đợi thêm chút nữa nhé.",
+      "Anh cũng đang đếm từng ngày đây.",
+      "Đoán thử xem trong phong bì có gì?",
+      "Hôm nay em ăn gì chưa đó?",
+    ],
   },
 
   music: {

@@ -4,6 +4,8 @@ import {
   MAX_FILMSTRIP_PHOTOS,
   MAX_MESSAGE_PHOTOS,
   MAX_TRACKS,
+  MAX_WAITING_TEDDIE_IMAGES,
+  MAX_WAITING_TEDDIE_LINES,
   SCALE_MAX,
   SCALE_MIN,
 } from "./schema";
@@ -234,7 +236,20 @@ const siteContent = shape({
       caption: text(2000),
       closing: text(300),
     }),
+    reply: shape({
+      enabled: bool,
+      title: text(300),
+      placeholder: text(300),
+      sendLabel: text(100),
+      thanks: text(500),
+    }),
     ...styled,
+  }),
+
+  waitingTeddie: shape({
+    enabled: bool,
+    images: list(image, MAX_WAITING_TEDDIE_IMAGES),
+    lines: list(text(300), MAX_WAITING_TEDDIE_LINES),
   }),
 
   music: shape({

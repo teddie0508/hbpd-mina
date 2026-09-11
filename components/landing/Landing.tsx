@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAudio } from "@/components/providers/AudioProvider";
+import { Teddie } from "@/components/teddie/Teddie";
 import { Ambience } from "@/components/ui/Ambience";
 import { WarmFlash } from "@/components/ui/WarmFlash";
-import type { LandingData } from "@/lib/content/schema";
+import type { LandingData, WaitingTeddiePick } from "@/lib/content/schema";
+import { noteOnce } from "@/lib/moments";
 import { fontVars } from "@/lib/theme";
 
 import { Countdown } from "./Countdown";
@@ -19,6 +21,7 @@ export function Landing({
   lockedOnServer,
   askNameOnServer,
   serverNow,
+  teddie,
 }: {
   /** Chỉ những trường trang bìa cần — xem `forLanding` trong schema.ts. */
   data: LandingData;
@@ -28,6 +31,8 @@ export function Landing({
   askNameOnServer: boolean;
   /** Giờ máy chủ lúc dựng trang, để đồng hồ đếm ngược không lệch theo điện thoại. */
   serverNow: number;
+  /** Gấu ở màn đếm ngược, máy chủ đã bốc sẵn ảnh và câu. null = không có. */
+  teddie: WaitingTeddiePick | null;
 }) {
   const router = useRouter();
   const audio = useAudio();
@@ -97,6 +102,11 @@ export function Landing({
 
   const handleFinished = useCallback(() => router.push("/hub"), [router]);
 
+  // Nhật ký: phong bì bắt đầu mở — dù đi qua lớp hỏi tên hay không.
+  useEffect(() => {
+    if (opening) noteOnce("opened");
+  }, [opening]);
+
   return (
     <main
       style={fontVars(data.landing.fonts, data.landing.typography)}
@@ -149,6 +159,17 @@ export function Landing({
         onPassed={handlePassed}
         onDismiss={() => setAsking(false)}
       />
+
+      {/* Gấu chỉ đứng ở màn đếm ngược. Hết giờ thì `locked` về false ngay
+          trên trình duyệt và gấu lui đi, nhường chỗ cho phong bì. */}
+      {locked && data.countdown.revealAt && teddie ? (
+        <Teddie
+          spot={teddie.spot}
+          fonts={teddie.fonts}
+          typography={teddie.typography}
+          tapHint={teddie.tapHint}
+        />
+      ) : null}
 
       {/* Portal ra <body>: đặt trong phong bì thì bị perspective giam lại,
           chỉ phủ đúng khung phong bì thay vì cả màn hình. */}

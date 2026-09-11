@@ -27,13 +27,23 @@ interface Entry {
 
 const entries = new Map<string, Entry>();
 
-/** Định danh người gửi: địa chỉ IP mà Vercel ghi vào header. */
-export function clientKey(request: Request): string {
-  const forwarded = request.headers.get("x-forwarded-for");
+/**
+ * Định danh người gửi: địa chỉ IP mà Vercel ghi vào header.
+ *
+ * Nhận bộ header chứ không nhận Request, để Server Action (chỉ có `headers()`)
+ * cũng dùng được — hộp thư ở trang Hoa dùng chung bộ đếm này để chặn gửi dồn.
+ */
+export function ipFromHeaders(headers: {
+  get(name: string): string | null;
+}): string {
+  const forwarded = headers.get("x-forwarded-for");
   const ip =
-    forwarded?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip")?.trim();
+    forwarded?.split(",")[0]?.trim() || headers.get("x-real-ip")?.trim();
   return ip || "khong-ro";
+}
+
+export function clientKey(request: Request): string {
+  return ipFromHeaders(request.headers);
 }
 
 /** Dọn các mục đã hết hạn, để bộ đếm không phình mãi theo thời gian. */

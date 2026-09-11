@@ -8,12 +8,14 @@ import { BackLink } from "@/components/ui/BackLink";
 import { Polaroid } from "@/components/ui/Polaroid";
 import { generateBouquet, randomSeed } from "@/lib/bouquet";
 import type { FlowersContent } from "@/lib/content/schema";
+import { noteOnce } from "@/lib/moments";
 import { toParagraphs } from "@/lib/text";
 import { fontVars } from "@/lib/theme";
 
 import { Bouquet } from "./Bouquet";
 import { PetalDrift } from "./PetalDrift";
 import { PetalStorm } from "./PetalStorm";
+import { ReplyBox } from "./ReplyBox";
 
 /** Seed cố định cho lần dựng đầu, để máy chủ và trình duyệt ra cùng một bó. */
 const FIRST_SEED = 20261102;
@@ -188,6 +190,9 @@ function Finale({ content }: { content: FlowersContent }) {
     return () => window.clearTimeout(id);
   }, []);
 
+  // Nhật ký: Mina đã tới được màn kết.
+  useEffect(() => noteOnce("finale"), []);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -253,10 +258,21 @@ function Finale({ content }: { content: FlowersContent }) {
         <Sprig flip />
       </motion.div>
 
+      {content.reply.enabled ? (
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 2.5, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-14 flex w-full justify-center"
+        >
+          <ReplyBox content={content.reply} />
+        </motion.div>
+      ) : null}
+
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.8, delay: 2.6 }}
+        transition={{ duration: 0.8, delay: content.reply.enabled ? 3.1 : 2.6 }}
         className="mt-14"
       >
         <BackLink />
