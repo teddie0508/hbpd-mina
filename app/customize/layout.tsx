@@ -9,5 +9,10 @@ export const metadata = {
 export default function CustomizeLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  return <div className="bg-deep text-cream min-h-svh">{children}</div>;
+  // `customize-root`: móc cho luật chống Safari tự phóng to ở globals.css.
+  return (
+    <div className="customize-root bg-deep text-cream min-h-svh">
+      {children}
+    </div>
+  );
 }

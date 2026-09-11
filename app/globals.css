@@ -419,3 +419,33 @@ body {
   background: color-mix(in srgb, var(--c-gold) 40%, transparent);
   color: var(--c-cream);
 }
+
+/*
+ * Chặn Safari trên iPhone tự phóng to trang ở /customize.
+ *
+ * Safari phóng to cả trang mỗi khi chạm vào ô nhập có chữ nhỏ hơn 16px, rồi
+ * KHÔNG tự thu lại khi rời ô. Ô nhập ở trình sửa để 14px cho gọn trên máy
+ * tính, nên sửa vài chữ xong mở hộp cắt ảnh là hộp tràn ra ngoài màn hình:
+ * tiêu đề mất hai đầu, nút "Dùng ảnh này" rơi xuống dưới mép.
+ *
+ * Chỉ áp cho màn cảm ứng. Cố ý đặt NGOÀI mọi @layer: lớp tiện ích của
+ * Tailwind (`text-sm`, `text-xs`) nằm trong layer, và CSS ngoài layer luôn
+ * thắng CSS trong layer — nên luật này đè được mà không cần !important, và
+ * ô nhập nào thêm sau này cũng tự được áp.
+ */
+@media (pointer: coarse) {
+  .customize-root
+    :is(
+      input:not(
+        [type="range"],
+        [type="checkbox"],
+        [type="radio"],
+        [type="color"],
+        [type="file"]
+      ),
+      textarea,
+      select
+    ) {
+    font-size: 16px;
+  }
+}
