@@ -38,7 +38,7 @@ export function WordsReveal({
       className={className}
       initial="an"
       whileInView="hien"
-      viewport={{ once: true, amount: 0.2 }}
+      viewport={{ once: true, amount: 0, margin: "0px 0px -20% 0px" }}
       transition={{ staggerChildren: stagger, delayChildren: delay }}
     >
       {words.map((word, i) => (
