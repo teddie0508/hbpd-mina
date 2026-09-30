@@ -190,6 +190,21 @@
     opacity: 0;
   }
 }
+/* Từng chữ hiện dần trong lá thư. Chạy bằng CSS chứ không bằng motion: một
+   lá thư dài có tới vài nghìn chữ, mỗi chữ mà là một phần tử do motion quản
+   lý thì chỉ riêng việc dựng trang đã ngốn hàng chục MB và giật cả lúc cuộn.
+   CSS thì trình duyệt tự lo, luồng chính không phải đụng tới. */
+@keyframes word-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.4em);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @utility final-ring {
   animation: final-ring 0.95s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
@@ -353,28 +368,75 @@ body {
      kéo về một ảnh texture, mà lại đổi màu theo bảng màu. */
   .letter-paper {
     background-color: color-mix(in srgb, var(--c-paper) 94%, var(--c-gold));
+    /*
+      Cả bốn lớp trước đây đều trải theo chiều cao cả tờ thư. Thư dài vài
+      nghìn pixel thì mỗi mảnh màn hình cuộn qua đều bắt trình duyệt dựng lại
+      bốn lớp gradient khổng lồ — đúng thứ làm iPhone cuộn giật.
+
+      Hai lớp vân nay nghiêng 45° và lặp trong ô vuông cạnh p×√2 (7px → 9,9px;
+      11px → 15,56px) nên các ô ghép liền mạch, trình duyệt chỉ dựng một ô bé
+      rồi dán lại. Hai vệt sáng ở góc đóng khung cứng 420px thay vì theo phần
+      trăm chiều cao: trên tờ thư 6000px thì "transparent 55%" trải ra hơn
+      3000px, nhạt tới mức chẳng còn thấy gì.
+    */
     background-image:
       radial-gradient(
-        ellipse at 12% 6%,
+        ellipse 70% 420px at 12% 0%,
         color-mix(in srgb, var(--c-gold) 12%, transparent),
-        transparent 55%
+        transparent 70%
       ),
       radial-gradient(
-        ellipse at 88% 94%,
+        ellipse 70% 420px at 88% 100%,
         color-mix(in srgb, var(--c-sage) 10%, transparent),
-        transparent 60%
+        transparent 70%
       ),
       repeating-linear-gradient(
-        114deg,
+        45deg,
         color-mix(in srgb, var(--c-ink) 4%, transparent) 0 1px,
         transparent 1px 7px
       ),
       repeating-linear-gradient(
-        68deg,
+        135deg,
         color-mix(in srgb, var(--c-ink) 3%, transparent) 0 1px,
         transparent 1px 11px
       );
+    background-size:
+      100% 420px,
+      100% 420px,
+      9.9px 9.9px,
+      15.56px 15.56px;
+    background-position:
+      left top,
+      left bottom,
+      left top,
+      left top;
+    background-repeat: no-repeat, no-repeat, repeat, repeat;
     color: var(--c-ink);
+  }
+
+  /*
+    Từng chữ trong lá thư. Chữ nằm sẵn ở trạng thái ẩn; khi đoạn văn cuộn tới
+    thì JavaScript chỉ gắn thêm MỘT class vào thẻ <p>, còn việc chạy là của
+    CSS. Độ trễ của từng chữ tính từ --i, nên hai nghìn chữ vẫn chỉ là hai
+    nghìn dòng CSS chứ không phải hai nghìn phần tử JavaScript.
+  */
+  .words-reveal > span {
+    opacity: 0;
+    transform: translateY(0.4em);
+  }
+  /* Trình duyệt tắt JavaScript thì không ai gắn được class chạy hiệu ứng,
+     mà chữ lại đang ẩn sẵn — hiện thẳng ra, đọc được vẫn hơn. */
+  @media (scripting: none) {
+    .words-reveal > span {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .words-in > span {
+    animation: word-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(
+      var(--i, 0) * var(--word-step, 0.035s) + var(--word-delay, 0s)
+    );
   }
 
   /* Dòng kẻ ngang của giấy viết thư.
