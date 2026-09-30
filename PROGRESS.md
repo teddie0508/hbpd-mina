@@ -18,6 +18,8 @@ Cập nhật: 11/09/2026. Sinh nhật: **02/11/2026**.
 | 10 giây cuối | `countdown.finalCountdown` — 10 giây cuối là một con số lớn (vòng sáng loang mỗi giây), về 0 hiện `unlockedNote` 2,2 giây rồi mới ra phong bì. `router.refresh()` lấy nhạc chạy NGAY lúc về 0 (`onZero`), không đợi tới lúc ra phong bì. Ba phút cuối xin Wake Lock giữ màn hình sáng |
 | Nhắc lịch | `countdown.reminder` — nút tải `/api/reminder` (.ics, UID cố định theo giờ mở, chuông reo trước `leadMinutes` phút, dòng gập theo byte) + link Google Calendar. Thẻ `<a>` thường, KHÔNG `download` (Safari iOS mới mở bảng Thêm vào Lịch). Ẩn khi đã qua giờ nhắc |
 | Tiếng giấy mở phong bì | `landing.envelopeSound` — tổng hợp bằng Web Audio (`lib/paper-sound.ts`), không tệp, không thẻ `<audio>` thứ hai (sợ làm dừng nhạc trên iPhone). Mở khoá AudioContext ngay trong cú chạm phong bì, phát lúc phong bì thật sự mở (có thể sau lớp hỏi tên). Nút gạt im lặng của iPhone tắt tiếng này, nhạc vẫn phát |
+| Ảnh gấu chờ | Đi qua `/api/waiting-teddie/<i>` chứ không trỏ thẳng Blob — màn đếm ngược là trang duy nhất người lạ vào được trước ngày mở, mà URL Blob mang theo tên kho, biết tên kho là mò được tệp khác. Route đọc rồi trả thẳng nội dung ảnh, KHÔNG chuyển hướng (bộ tối ưu ảnh của Next không đi theo redirect, trả 400 và ô ảnh trống) |
+| Bản lưu cũ ở đường dẫn cố định | `secureLegacy()` + nút **Dọn chỗ hở trong kho** (tab Chung): chép sang private, kho không nhận thì sang đường dẫn 32 ký tự ngẫu nhiên; đọc lại khớp nguyên văn rồi mới xoá bản cũ |
 | Gấu chờ | `waitingTeddie` — máy chủ bốc 1 ảnh + 1 câu mỗi lần tải trang, chỉ khi còn khoá; chạm gấu đổi sang câu khác (gửi kèm cả kho câu); ảnh `preload`; bỏ qua ảnh placehold.co; font và dòng nhắc dùng chung với tab Gấu |
 | Ngôn ngữ | Chủ yếu tiếng Việt, có chỗ trộn tiếng Anh → registry font đánh dấu font nào **không** có dấu tiếng Việt |
 | Cổng vào | **Đếm ngược tới 02/11/2026 00:00 +07:00**, tự mở khi về 0. Xem trước bằng `/?preview=1` (phải đã đăng nhập) |
@@ -67,7 +69,7 @@ lib/
 next.config.ts                   header chống nhúng iframe, nosniff, referrer
 ```
 
-## Ba mươi chín cái bẫy đã gặp, đừng dẫm lại
+## Bốn mươi cái bẫy đã gặp, đừng dẫm lại
 
 1. **Không khai `--font-*` trong `@theme`.** Biến trong `@theme` nằm ở `:root` nên `var()` bị thay thế **ngay tại `:root`**; khối con đặt lại `--f-heading` sẽ vô tác dụng. Font phải khai bằng `@utility font-heading { font-family: var(--f-heading) }`.
 
@@ -150,6 +152,8 @@ next.config.ts                   header chống nhúng iframe, nosniff, referrer
 
 39. **Gradient trải dài cả khối thì khối cao quá là trình duyệt bỏ vẽ.** Dòng kẻ tờ thư ở /message vẽ bằng `repeating-linear-gradient` phủ hết khối, nên trình duyệt phải dựng một ảnh cao bằng cả tờ thư. Lời nhắn dài (đo được 4186px ở màn 393px, 3088px ở màn 800px) là Safari trên iPhone bỏ luôn không vẽ — mất sạch dòng kẻ, đúng lỗi bạn gặp. Chữa bằng cách dựng MỘT ô cao đúng một dòng rồi lặp: `background-size: 100% var(--rule)` + `background-repeat: repeat-y`, ảnh cần dựng chỉ còn cao ~30px, thư dài bao nhiêu cũng vẽ được và nhìn y hệt. Cách kiểm không cần mắt: đọc `backgroundSize` và `line-height` của đoạn văn, hai số phải bằng nhau (28px/28px, 32px/32px) thì chữ mới nằm đúng dòng kẻ. Hai lớp vân giấy chéo của `.letter-paper` vẫn là gradient phủ cả tờ; hôm nào thấy vân biến mất trên thư rất dài thì chữa y như vậy.
 
+40. **Ngưỡng `whileInView` theo phần trăm chiều cao khối sẽ KHÔNG BAO GIỜ đạt nếu khối cao hơn màn hình.** `viewport={{ amount: 0.25 }}` nghĩa là 25% chiều cao KHỐI phải nằm trong khung nhìn. Lời nhắn dài làm tờ thư cao 6000px, tức cần 1500px hiện cùng lúc — màn điện thoại 850px không bao giờ đạt, nên khối đứng mãi ở `opacity: 0`. Triệu chứng đánh lừa: chữ vẫn bôi đen và copy được mà mắt không thấy gì, rất dễ đổ oan cho nền CSS (tôi đã đổ oan cho dòng kẻ thật). Dùng `amount: "some"` cộng lề âm đáy (`margin: "0px 0px -12% 0px"`) thì khối cao bao nhiêu cũng chạy, khối nhỏ vẫn có cảm giác như cũ. Áp cho mọi khối co giãn theo nội dung: `Reveal`, `WordsReveal`, `MemoryBoard`, `Filmstrip`, phần intro của /memories. Cách kiểm: cuộn tới rồi đọc `getComputedStyle(wrapper).opacity`, phải ra 1. **Đừng kiểm bằng ảnh chụp có mẹo "still mode"** — mẹo đó ép `opacity: 1 !important` nên che mất đúng lỗi này.
+
 Ngoài ra: `placehold.co` mặc định trả SVG mà bộ tối ưu ảnh của Next chặn SVG — URL ảnh giữ chỗ phải có đuôi `.png`.
 
 ## Ghi chú công cụ
@@ -182,7 +186,9 @@ el.textContent = `
 - [ ] **Phase 7** — chạy thử thật trên iPhone bằng nút **Diễn tập 0h** (chọn 15 giây): 10 giây cuối, tiếng giấy, nhạc bật đúng lúc chạm, hỏi tên, mưa cánh hoa ở 120Hz
 - [x] Đã deploy: a-special-gift-to-my-love.vercel.app · Blob store dùng chung, tiền tố `mina/` · region SIN1 · push lên `main` là Vercel tự deploy
 - [x] Đã đổi `AUTH_SECRET` trên Vercel (11/09/2026)
-- [ ] **Vá chỗ lộ `mina/content/site.json`** (phát hiện 11/09/2026). Kho Blob là kho public — lưu private bị từ chối, bản lưu rơi về public kèm cảnh báo. Tệp `site.json` ở đường dẫn cố định trả 200 cho bất kỳ ai, và tên kho lộ ngay trên màn đếm ngược qua link ảnh gấu chờ. Hướng vá đã đề xuất: (1) tải ảnh gấu chờ qua trang mình để giấu tên kho, (2) chép `site.json` sang đường dẫn ngẫu nhiên, đọc lại khớp rồi mới xoá bản cũ, (3) lâu dài: kho private riêng cho nội dung + hộp thư. **Đang chờ bạn đồng ý**
+- [x] Giấu tên kho khỏi màn đếm ngược: ảnh gấu chờ đi qua `/api/waiting-teddie/<i>` (30/09/2026)
+- [ ] **Bấm "Dọn chỗ hở trong kho"** ở tab Chung trên bản deploy, để dời `mina/content/site.json` khỏi đường dẫn cố định. Code đã sẵn sàng, nhưng phải bấm tay vì thao tác có xoá tệp
+- [ ] Lâu dài: kho Blob **private** riêng cho nội dung + hộp thư (kho hiện tại là kho public nên bản lưu vẫn ở chế độ public, chỉ được cái tên tệp không ai đoán ra)
 
 `.data/` đã gitignore nên không bao giờ lên Vercel — bản deploy tự dùng mặc định trong `defaults.ts`, tức đếm ngược tới 02/11/2026 có hiệu lực ngay.
 

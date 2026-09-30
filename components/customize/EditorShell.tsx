@@ -25,6 +25,7 @@ import {
 } from "./panels";
 import { InboxPanel } from "./InboxPanel";
 import { RehearsalCard } from "./RehearsalCard";
+import { SecurityCard } from "./SecurityCard";
 import { StorageProvider } from "./upload";
 import { UploadCleanup } from "./UploadCleanup";
 import { VersionHistory } from "./VersionHistory";
@@ -273,6 +274,7 @@ export function EditorShell({
               <RehearsalCard rehearsalAt={rehearsalAt} />
               <VersionHistory onLoad={(khoiPhuc) => setDraft(khoiPhuc)} />
               <UploadCleanup />
+              <SecurityCard />
             </div>
           ) : null}
           {tab === "general" ? (

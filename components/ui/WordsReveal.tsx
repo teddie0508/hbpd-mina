@@ -38,7 +38,9 @@ export function WordsReveal({
       className={className}
       initial="an"
       whileInView="hien"
-      viewport={{ once: true, amount: 0.2 }}
+      // Xem chú thích ở Reveal.tsx: ngưỡng theo phần trăm chiều cao khối sẽ
+      // không bao giờ đạt nếu đoạn văn cao hơn màn hình.
+      viewport={{ once: true, amount: "some", margin: "0px 0px -10% 0px" }}
       transition={{ staggerChildren: stagger, delayChildren: delay }}
     >
       {words.map((word, i) => (

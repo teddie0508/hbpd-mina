@@ -18,13 +18,23 @@ const CONTENT_PREFIX = `${BLOB_PREFIX}content/`;
  *
  * Nó là PUBLIC, nằm ở một đường dẫn ai cũng đoán được: chỉ cần biết tên miền
  * của kho — lộ ra qua bất kỳ URL ảnh hay nhạc nào — là đọc được toàn bộ nội
- * dung. Lần lưu đầu tiên ở chế độ private sẽ chép nó sang LEGACY_PRIVATE_PATH,
- * đọc lại cho khớp nguyên văn, rồi mới xoá bản public (xem `secureLegacy`).
+ * dung. `secureLegacy()` chép nó sang chỗ kín hơn — private nếu kho nhận,
+ * không thì một đường dẫn ngẫu nhiên — đọc lại cho khớp nguyên văn rồi mới
+ * xoá bản ở đường dẫn cố định này.
  */
 const LEGACY_PUBLIC_PATH = `${CONTENT_PREFIX}site.json`;
 
 /** Bản sao private của bản cũ nhất. Phao cứu sinh, không bao giờ bị dọn. */
 const LEGACY_PRIVATE_PATH = `${CONTENT_PREFIX}site-legacy.json`;
+
+/**
+ * Bản sao của bản cũ nhất khi kho KHÔNG nhận tệp private.
+ *
+ * Vẫn là public, nhưng tên có 32 ký tự ngẫu nhiên nên không ai gõ mò ra được,
+ * mà muốn liệt kê thư mục thì phải có token. Không bằng private, nhưng hơn
+ * hẳn một đường dẫn cố định ai cũng đoán được.
+ */
+const LEGACY_RANDOM_RE = /^site-legacy-[0-9a-f]{32}.json$/;
 
 /** `site-<13 chữ số mốc thời gian>-<6 ký tự ngẫu nhiên>.json` */
 const VERSION_RE = /^site-\d{13}-[0-9a-f]{6}\.json$/;
@@ -84,12 +94,17 @@ function sortedVersions<T extends { pathname: string }>(blobs: T[]): T[] {
 function legacyBlob<T extends { pathname: string }>(blobs: T[]): T | undefined {
   return (
     blobs.find((b) => b.pathname === LEGACY_PRIVATE_PATH) ??
+    blobs.find((b) => LEGACY_RANDOM_RE.test(versionName(b.pathname))) ??
     blobs.find((b) => b.pathname === LEGACY_PUBLIC_PATH)
   );
 }
 
 function isLegacyPath(pathname: string): boolean {
-  return pathname === LEGACY_PRIVATE_PATH || pathname === LEGACY_PUBLIC_PATH;
+  return (
+    pathname === LEGACY_PRIVATE_PATH ||
+    pathname === LEGACY_PUBLIC_PATH ||
+    LEGACY_RANDOM_RE.test(versionName(pathname))
+  );
 }
 
 /**
@@ -408,41 +423,82 @@ async function pruneOldVersions(): Promise<void> {
 }
 
 /**
- * Chuyển bản cũ nhất từ public sang private.
+ * Dời bản lưu cũ nhất khỏi đường dẫn cố định `content/site.json`.
  *
- * Làm theo đúng thứ tự an toàn: chép sang bản private → đọc lại bản private
- * → khớp nguyên văn với bản gốc → lúc đó mới xoá bản public. Hỏng ở bất kỳ
- * bước nào thì dừng, để nguyên bản public: lộ còn hơn mất.
+ * Đường dẫn đó ai cũng đoán được, chỉ cần biết tên kho — mà tên kho lộ ra
+ * theo mọi link ảnh. Tệp lại chứa nguyên nội dung của thời điểm đó: lá thư,
+ * đáp án mật khẩu, mọi thứ.
  *
- * Cố ý KHÔNG đi qua putJson — putJson lùi về public khi private hỏng, mà ở
- * đây lùi về public là tạo thêm một bản sao public thứ hai.
+ * Thứ tự an toàn, không được đổi: chép sang chỗ mới → đọc lại chỗ mới →
+ * khớp NGUYÊN VĂN với bản gốc → lúc đó mới xoá bản cũ. Hỏng ở bất kỳ bước
+ * nào thì dừng và giữ nguyên bản cũ: lộ còn hơn mất.
+ *
+ * Ưu tiên private. Kho không nhận private (kho public) thì vẫn chép được
+ * sang một đường dẫn mang 32 ký tự ngẫu nhiên — vẫn public, nhưng không ai
+ * mò ra. Cố ý KHÔNG đi qua putJson: putJson tự lùi về public khi private
+ * hỏng, mà ở đây mỗi nhánh cần một cách kiểm tra lại khác nhau.
  */
-async function secureLegacy(): Promise<void> {
+export interface LegacyOutcome {
+  /** "sach": không còn gì ở đường dẫn cố định. "da-chuyen": vừa dời xong. */
+  state: "sach" | "da-chuyen" | "loi";
+  /** Bản sao mới nằm ở chế độ nào. */
+  privacy?: "private" | "public";
+  reason?: string;
+}
+
+export async function secureLegacy(): Promise<LegacyOutcome> {
+  if (!usingBlob()) return { state: "sach" };
+
   try {
     const blobs = await listAll(CONTENT_PREFIX);
     const cu = blobs.find((b) => b.pathname === LEGACY_PUBLIC_PATH);
-    if (!cu) return;
+    if (!cu) return { state: "sach" };
 
     const data = await readBlobJson(cu);
-    if (data === null) return;
+    if (data === null) return { state: "loi", reason: "không đọc được bản cũ" };
     const goc = JSON.stringify(data, null, 2);
 
-    await put(LEGACY_PRIVATE_PATH, goc, {
-      access: "private",
+    // 1. Ưu tiên private.
+    try {
+      await put(LEGACY_PRIVATE_PATH, goc, {
+        access: "private",
+        contentType: "application/json",
+        addRandomSuffix: false,
+        allowOverwrite: true,
+      });
+      const kiem = await readPrivateJson(LEGACY_PRIVATE_PATH);
+      if (kiem !== null && JSON.stringify(kiem, null, 2) === goc) {
+        await del(cu.pathname);
+        return { state: "da-chuyen", privacy: "private" };
+      }
+    } catch (err) {
+      console.error("[content] kho chưa nhận tệp private:", err);
+    }
+
+    // 2. Kho public: đổi đường dẫn cố định thành đường dẫn không ai đoán ra.
+    const ten = `${CONTENT_PREFIX}site-legacy-${crypto.randomUUID().replace(/-/g, "")}.json`;
+    const ghi = await put(ten, goc, {
+      access: "public",
       contentType: "application/json",
       addRandomSuffix: false,
-      allowOverwrite: true,
     });
 
-    const kiemLai = await readPrivateJson(LEGACY_PRIVATE_PATH);
-    if (kiemLai === null || JSON.stringify(kiemLai, null, 2) !== goc) return;
+    const doc = await fetch(ghi.url, { cache: "no-store" });
+    if (!doc.ok || (await doc.text()) !== goc) {
+      return {
+        state: "loi",
+        reason: "bản chép lại không khớp nên giữ nguyên bản cũ",
+      };
+    }
 
     await del(cu.pathname);
-    console.info(
-      "[content] đã chuyển bản cũ nhất sang private, xoá bản public",
-    );
+    return { state: "da-chuyen", privacy: "public" };
   } catch (err) {
-    console.error("[content] chưa chuyển được bản cũ nhất sang private:", err);
+    console.error("[content] chưa dời được bản cũ nhất:", err);
+    return {
+      state: "loi",
+      reason: err instanceof Error ? err.message : "lỗi không rõ nguyên nhân",
+    };
   }
 }
 
@@ -492,8 +548,9 @@ export async function saveContent(next: SiteContent): Promise<SaveOutcome> {
 
     viewerMemo = { at: Date.now(), raw: payload };
     await pruneOldVersions();
-    // Kho đã nhận private thì tiện tay đóng nốt lỗ hổng của bản cũ nhất.
-    if (privacy === "private") await secureLegacy();
+    // Tiện tay đóng nốt lỗ hổng của bản cũ nhất. Chạy kể cả khi kho chỉ
+    // nhận public: lúc đó nó dời sang một đường dẫn không ai đoán ra.
+    await secureLegacy();
 
     return { content: payload, privacy };
   }

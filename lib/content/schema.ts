@@ -423,27 +423,43 @@ export interface WaitingTeddiePick {
 }
 
 /**
+ * Những ảnh gấu chờ dùng được: bỏ ảnh giữ chỗ chưa kịp thay.
+ *
+ * Chỉ số trong danh sách NÀY chính là con số trên đường dẫn
+ * /api/waiting-teddie/<i>, nên chỗ bốc ảnh và chỗ phục vụ ảnh bắt buộc lọc
+ * giống hệt nhau — lọc lệch là gấu ra sai ảnh.
+ */
+export function waitingTeddieImages(content: SiteContent): ImageAsset[] {
+  return content.waitingTeddie.images.filter(
+    (img) => !img.url.startsWith("https://placehold.co/"),
+  );
+}
+
+/**
  * Bốc ngẫu nhiên một ảnh và một câu cho gấu ở màn đếm ngược.
  *
- * Bỏ qua ảnh giữ chỗ: nút "Thêm ảnh" ở /customize chèn sẵn một ô placehold.co,
- * chưa kịp tải ảnh thật mà lưu thì Mina sẽ thấy một ô vuông xám thay cho gấu.
+ * Ảnh KHÔNG trỏ thẳng vào Blob mà đi qua /api/waiting-teddie/<i>. Màn đếm
+ * ngược là trang duy nhất người lạ xem được trước ngày mở; địa chỉ Blob mang
+ * theo tên kho, mà biết tên kho là mò được các tệp khác trong kho.
+ *
  * Giọng nói (font) và dòng nhắc dùng chung với gấu ở các trang trong — cùng
  * một nhân vật.
  */
 export function pickWaitingTeddie(
   content: SiteContent,
 ): WaitingTeddiePick | null {
-  const { enabled, images, lines } = content.waitingTeddie;
-  const anhThat = images.filter(
-    (img) => !img.url.startsWith("https://placehold.co/"),
-  );
-  const cau = lines.map((l) => l.trim()).filter(Boolean);
-  if (!enabled || anhThat.length === 0) return null;
+  const anhThat = waitingTeddieImages(content);
+  const cau = content.waitingTeddie.lines.map((l) => l.trim()).filter(Boolean);
+  if (!content.waitingTeddie.enabled || anhThat.length === 0) return null;
 
+  const chiSo = Math.floor(Math.random() * anhThat.length);
   const boc = <T>(xs: T[]): T => xs[Math.floor(Math.random() * xs.length)];
 
   return {
-    spot: { image: boc(anhThat), lines: cau.length > 0 ? [boc(cau)] : [] },
+    spot: {
+      image: { ...anhThat[chiSo], url: `/api/waiting-teddie/${chiSo}` },
+      lines: cau.length > 0 ? [boc(cau)] : [],
+    },
     // Các câu này vốn viết cho màn đếm ngược, gửi cả kho xuống không lộ gì thêm.
     pool: cau,
     fonts: content.teddie.fonts,

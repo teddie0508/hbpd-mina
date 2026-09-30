@@ -74,7 +74,9 @@ export function MemoryBoard({ board }: { board: Board }) {
     <motion.section
       initial={{ opacity: 0, y: 40 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.15 }}
+      // Khối ảnh cao theo số ảnh bên trong, có thể cao hơn màn hình nhiều
+      // lần — xem chú thích ở Reveal.tsx.
+      viewport={{ once: true, amount: "some", margin: "0px 0px -10% 0px" }}
       transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
       className="relative"
     >

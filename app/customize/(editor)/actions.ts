@@ -6,6 +6,7 @@ import { isEditor } from "@/lib/auth";
 import { UPLOAD_PREFIX } from "@/lib/blob-paths";
 import type { SiteContent } from "@/lib/content/schema";
 import {
+  secureLegacy,
   deleteUnusedUploads,
   findUnusedUploads,
   getContent,
@@ -253,6 +254,50 @@ export async function deleteInboxEntry(
       error: error instanceof Error ? error.message : "Không xoá được.",
     };
   }
+}
+
+/**
+ * Dời bản lưu cũ nhất khỏi đường dẫn cố định `mina/content/site.json`.
+ *
+ * Đường dẫn đó ai cũng đoán được nếu biết tên kho, mà tệp lại chứa nguyên nội
+ * dung của thời điểm đó. Chạy được nhiều lần: lần sau chỉ báo "đã sạch".
+ */
+export async function secureLegacyNow(): Promise<{
+  tone: "ok" | "warn" | "err";
+  message: string;
+}> {
+  if (!(await isEditor())) return { tone: "err", message: HET_PHIEN };
+  if (storageMode() !== "blob") {
+    return {
+      tone: "ok",
+      message: "Chạy ở máy thì không có kho Blob, không có gì phải dời.",
+    };
+  }
+
+  const res = await secureLegacy();
+  if (res.state === "sach") {
+    return {
+      tone: "ok",
+      message: "Kho sạch: không còn bản lưu nào nằm ở đường dẫn cố định.",
+    };
+  }
+  if (res.state === "da-chuyen") {
+    return res.privacy === "private"
+      ? {
+          tone: "ok",
+          message:
+            "Đã chuyển bản lưu cũ nhất sang chế độ private, và xoá bản ở đường dẫn cố định.",
+        }
+      : {
+          tone: "warn",
+          message:
+            "Kho không nhận tệp private, nên bản cũ nhất đã được chép sang một đường dẫn có 32 ký tự ngẫu nhiên — vẫn public nhưng không ai đoán ra — rồi xoá bản ở đường dẫn cố định. Muốn kín hẳn thì cần một kho Blob private.",
+        };
+  }
+  return {
+    tone: "err",
+    message: `Chưa dời được: ${res.reason ?? "không rõ nguyên nhân"}. Bản cũ vẫn còn nguyên, không mất gì.`,
+  };
 }
 
 /** Tìm ảnh và nhạc không còn bản lưu nào dùng tới. Chỉ tìm, chưa xoá. */

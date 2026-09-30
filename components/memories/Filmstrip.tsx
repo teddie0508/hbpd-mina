@@ -17,7 +17,7 @@ export function Filmstrip({ photos }: { photos: ImageAsset[] }) {
     <motion.div
       initial={{ opacity: 0, y: 30, rotate: -6 }}
       whileInView={{ opacity: 1, y: 0, rotate: -4 }}
-      viewport={{ once: true, amount: 0.2 }}
+      viewport={{ once: true, amount: "some", margin: "0px 0px -10% 0px" }}
       transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
       className="relative z-10 shrink-0 self-center rounded-sm bg-[#15201d] p-2 shadow-[0_14px_34px_-10px_rgba(0,0,0,0.7)] md:rotate-[-4deg]"
     >

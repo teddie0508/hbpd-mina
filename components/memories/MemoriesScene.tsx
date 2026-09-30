@@ -46,7 +46,11 @@ export function MemoriesScene({ content }: { content: MemoriesContent }) {
                   key={i}
                   initial={{ opacity: 0, x: i % 2 === 0 ? -56 : 56 }}
                   whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true, amount: 0.3 }}
+                  viewport={{
+                    once: true,
+                    amount: "some",
+                    margin: "0px 0px -10% 0px",
+                  }}
                   transition={{
                     duration: 1.1,
                     delay: 0.35 + i * 0.22,
