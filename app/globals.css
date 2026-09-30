@@ -383,13 +383,23 @@ body {
      ngay. `background-origin: content-box` cho dòng kẻ đầu tiên rơi đúng
      dưới dòng chữ đầu tiên bất kể padding trên là bao nhiêu. */
   .letter-ruled {
-    background-image: repeating-linear-gradient(
+    /*
+      Kẻ dòng bằng MỘT ô cao đúng một dòng rồi lặp xuống, chứ không phải một
+      gradient trải dài cả tờ giấy.
+
+      repeating-linear-gradient phủ hết khối bắt trình duyệt dựng một ảnh cao
+      bằng cả tờ thư. Thư ngắn thì không sao, nhưng thư dài vài nghìn pixel là
+      Safari trên iPhone bỏ luôn không vẽ — dòng kẻ biến mất sạch, đúng lỗi đã
+      gặp. Ô nhỏ lặp lại thì trình duyệt chỉ phải dựng một ảnh cao ~30px, thư
+      dài bao nhiêu cũng vẽ được, mà nhìn không khác một chút nào.
+    */
+    background-image: linear-gradient(
       to bottom,
-      transparent 0,
       transparent calc(var(--rule) - 1px),
-      color-mix(in srgb, var(--c-ink) 24%, transparent) calc(var(--rule) - 1px),
-      color-mix(in srgb, var(--c-ink) 24%, transparent) var(--rule)
+      color-mix(in srgb, var(--c-ink) 24%, transparent) calc(var(--rule) - 1px)
     );
+    background-size: 100% var(--rule);
+    background-repeat: repeat-y;
     background-origin: content-box;
     background-clip: content-box;
   }

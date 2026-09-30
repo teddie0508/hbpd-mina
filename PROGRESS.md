@@ -67,7 +67,7 @@ lib/
 next.config.ts                   header chống nhúng iframe, nosniff, referrer
 ```
 
-## Ba mươi tám cái bẫy đã gặp, đừng dẫm lại
+## Ba mươi chín cái bẫy đã gặp, đừng dẫm lại
 
 1. **Không khai `--font-*` trong `@theme`.** Biến trong `@theme` nằm ở `:root` nên `var()` bị thay thế **ngay tại `:root`**; khối con đặt lại `--f-heading` sẽ vô tác dụng. Font phải khai bằng `@utility font-heading { font-family: var(--f-heading) }`.
 
@@ -147,6 +147,8 @@ next.config.ts                   header chống nhúng iframe, nosniff, referrer
 37. **Truyền thẳng hàm có tham số tuỳ chọn vào `onClick` là tự bắn vào chân.** `onClick={handleSave}` với `handleSave(force = false)` thì sự kiện click bị nhận làm `force` — một object, luôn truthy — nên lần nào bấm Lưu cũng là "lưu đè" và lớp chống ghi đè vô dụng mà không một dòng lỗi. Bọc trong arrow function.
 
 38. **Dọn tệp tải lên phải tính theo MỌI bản lưu trong lịch sử, và dừng nếu có bản không đọc được.** Chỉ tính bản hiện hành thì khôi phục một bản cũ là ảnh vỡ hết. Gom đường dẫn bằng cách quét mọi chuỗi trong JSON (`collectUploadPaths`) chứ không liệt kê từng chỗ có ảnh — liệt kê là sớm muộn quên một chỗ mới thêm vào schema, và tệp đang dùng bị xoá. Bỏ qua tệp tải lên trong 24 giờ (có thể nằm trong bản nháp chưa lưu), và tính lại danh sách ngay lúc xoá thay vì tin danh sách trình duyệt gửi lên.
+
+39. **Gradient trải dài cả khối thì khối cao quá là trình duyệt bỏ vẽ.** Dòng kẻ tờ thư ở /message vẽ bằng `repeating-linear-gradient` phủ hết khối, nên trình duyệt phải dựng một ảnh cao bằng cả tờ thư. Lời nhắn dài (đo được 4186px ở màn 393px, 3088px ở màn 800px) là Safari trên iPhone bỏ luôn không vẽ — mất sạch dòng kẻ, đúng lỗi bạn gặp. Chữa bằng cách dựng MỘT ô cao đúng một dòng rồi lặp: `background-size: 100% var(--rule)` + `background-repeat: repeat-y`, ảnh cần dựng chỉ còn cao ~30px, thư dài bao nhiêu cũng vẽ được và nhìn y hệt. Cách kiểm không cần mắt: đọc `backgroundSize` và `line-height` của đoạn văn, hai số phải bằng nhau (28px/28px, 32px/32px) thì chữ mới nằm đúng dòng kẻ. Hai lớp vân giấy chéo của `.letter-paper` vẫn là gradient phủ cả tờ; hôm nào thấy vân biến mất trên thư rất dài thì chữa y như vậy.
 
 Ngoài ra: `placehold.co` mặc định trả SVG mà bộ tối ưu ảnh của Next chặn SVG — URL ảnh giữ chỗ phải có đuôi `.png`.
 
