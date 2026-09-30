@@ -4,7 +4,11 @@ import { motion } from "motion/react";
 import Image from "next/image";
 import { useRef, useState } from "react";
 
-import type { MemoryBoard as Board } from "@/lib/content/schema";
+import type {
+  FontSet,
+  MemoryBoard as Board,
+  TypeSet,
+} from "@/lib/content/schema";
 
 import { BoardPhoto } from "./BoardPhoto";
 import { PhotoGallery } from "./PhotoGallery";
@@ -44,7 +48,16 @@ const TRAILS = [
 const PLANE =
   "M 7 0 L 1 1.1 L -1.4 4.2 L -2.8 4.2 L -1.9 1.5 L -4.7 1.9 L -5.9 3.2 L -6.6 3.2 L -6 1.3 L -7.5 0 L -6 -1.3 L -6.6 -3.2 L -5.9 -3.2 L -4.7 -1.9 L -1.9 -1.5 L -2.8 -4.2 L -1.4 -4.2 L 1 -1.1 Z";
 
-export function MemoryBoard({ board }: { board: Board }) {
+export function MemoryBoard({
+  board,
+  fonts,
+  typography,
+}: {
+  board: Board;
+  /** Chuyển tiếp xuống khung xem ảnh phóng to — nó dựng ra ngoài <main>. */
+  fonts: FontSet;
+  typography: TypeSet;
+}) {
   const photos = board.photos.slice(0, SPOTS.length);
 
   // Vị trí con trỏ so với tâm khối, quy về khoảng -1..1.
@@ -216,6 +229,8 @@ export function MemoryBoard({ board }: { board: Board }) {
         index={openAt}
         onIndex={setOpenAt}
         onClose={() => setOpenAt(null)}
+        fonts={fonts}
+        typography={typography}
       />
     </motion.section>
   );

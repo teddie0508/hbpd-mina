@@ -8,8 +8,11 @@ import { createPortal } from "react-dom";
 import {
   ASPECT_CSS,
   ASPECT_VALUE,
+  type FontSet,
   type ImageAsset,
+  type TypeSet,
 } from "@/lib/content/schema";
+import { fontVars } from "@/lib/theme";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 
 /** Kéo ngang quá chừng này (px) thì tính là muốn lật sang tấm khác. */
@@ -82,8 +85,20 @@ export function PhotoGallery({
   index,
   onIndex,
   onClose,
+  fonts,
+  typography,
 }: {
   photos: ImageAsset[];
+  /**
+   * Font của trang Kỷ niệm. BẮT BUỘC phải truyền vào: khung này dựng qua
+   * portal ra thẳng <body>, mà biến font lại đặt trên thẻ <main>. Thiếu thì
+   * chú thích ảnh rơi vào giá trị dự phòng ở :root — dự phòng của --f-accent
+   * là "cursive", tức font script mặc định của hệ điều hành. Trên Windows còn
+   * đọc tạm, trên iPhone là Snell Roundhand nét mảnh như sợi chỉ. Đúng cái
+   * bẫy đã dính với chú gấu, dính lại lần hai ở đây.
+   */
+  fonts: FontSet;
+  typography: TypeSet;
   /** null = đang đóng. */
   index: number | null;
   onIndex: (next: number) => void;
@@ -157,6 +172,7 @@ export function PhotoGallery({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.28, ease: "easeOut" }}
+          style={fontVars(fonts, typography)}
           className="bg-base/95 fixed inset-0 z-[80] flex flex-col"
         >
           {/* Nạp sẵn tấm liền trước và liền sau, để bấm next là có ngay.
@@ -203,7 +219,14 @@ export function PhotoGallery({
             />
 
             {photo.note?.trim() ? (
-              <p className="font-accent text-cream/85 pointer-events-auto max-w-md text-center text-[calc(clamp(0.95rem,3.4vw,1.15rem)*var(--fz-accent,1))] leading-snug text-balance">
+              /*
+                Chú thích thường để font viết tay, mà font viết tay nét rất
+                mảnh: co xuống 15px trên điện thoại là dấu tiếng Việt dính vào
+                nhau, đọc không ra. Nay giữ nguyên cỡ của desktop (1,15rem)
+                cho mọi màn, mực đậm hết cỡ, và trên màn cảm ứng tô thêm viền
+                chữ 0,25px để nét mảnh không biến mất. Desktop nhìn y như cũ.
+              */
+              <p className="font-accent text-cream pointer-events-auto max-w-md text-center text-[calc(1.15rem*var(--fz-accent,1))] leading-snug text-balance [-webkit-text-stroke:0.25px_currentColor] sm:[-webkit-text-stroke:0]">
                 {photo.note.trim()}
               </p>
             ) : null}

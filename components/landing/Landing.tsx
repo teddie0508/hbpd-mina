@@ -173,6 +173,8 @@ export function Landing({
 
       <NameGate
         config={data.landing.passphrase}
+        fonts={data.landing.fonts}
+        typography={data.landing.typography}
         open={asking}
         onPassed={handlePassed}
         onDismiss={() => setAsking(false)}

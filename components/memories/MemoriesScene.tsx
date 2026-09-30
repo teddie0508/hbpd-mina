@@ -68,7 +68,12 @@ export function MemoriesScene({ content }: { content: MemoriesContent }) {
         {/* Các khối ảnh, mỗi khối một ảnh nền riêng. */}
         <div className="mt-16 space-y-10 sm:mt-24 sm:space-y-14">
           {content.boards.map((board) => (
-            <MemoryBoard key={board.id} board={board} />
+            <MemoryBoard
+              key={board.id}
+              board={board}
+              fonts={content.fonts}
+              typography={content.typography}
+            />
           ))}
         </div>
 

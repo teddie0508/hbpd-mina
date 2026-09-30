@@ -11,8 +11,9 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { tryPassphrase } from "@/app/(experience)/actions";
-import type { PublicPassphrase } from "@/lib/content/schema";
+import type { FontSet, PublicPassphrase, TypeSet } from "@/lib/content/schema";
 import { cx } from "@/lib/cx";
+import { fontVars } from "@/lib/theme";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 
 /**
@@ -31,8 +32,13 @@ export function NameGate({
   open,
   onPassed,
   onDismiss,
+  fonts,
+  typography,
 }: {
   config: PublicPassphrase;
+  /** Font của trang bìa — xem lý do ở PhotoGallery: portal không thừa hưởng. */
+  fonts: FontSet;
+  typography: TypeSet;
   open: boolean;
   /** Trả lời đúng. Bên ngoài lo mở phong bì tiếp. */
   onPassed: () => void;
@@ -47,7 +53,13 @@ export function NameGate({
   return createPortal(
     <AnimatePresence>
       {open ? (
-        <GatePanel config={config} onPassed={onPassed} onDismiss={onDismiss} />
+        <GatePanel
+          config={config}
+          onPassed={onPassed}
+          onDismiss={onDismiss}
+          fonts={fonts}
+          typography={typography}
+        />
       ) : null}
     </AnimatePresence>,
     document.body,
@@ -58,10 +70,14 @@ function GatePanel({
   config,
   onPassed,
   onDismiss,
+  fonts,
+  typography,
 }: {
   config: PublicPassphrase;
   onPassed: () => void;
   onDismiss: () => void;
+  fonts: FontSet;
+  typography: TypeSet;
 }) {
   const reduced = useReducedMotion();
   const khungRef = useRef<HTMLDivElement>(null);
@@ -133,6 +149,7 @@ function GatePanel({
   return (
     <motion.div
       ref={khungRef}
+      style={fontVars(fonts, typography)}
       className="fixed inset-0 z-[70] grid place-items-center px-6"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
