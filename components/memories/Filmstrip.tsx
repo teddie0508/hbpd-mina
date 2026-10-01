@@ -39,7 +39,7 @@ export function Filmstrip({ photos }: { photos: ImageAsset[] }) {
               sizes="128px"
               quality={90}
               className="object-cover"
-              priority={i === 0}
+              preload={i === 0}
             />
           </div>
         ))}

@@ -230,7 +230,7 @@ function Finale({ content }: { content: FlowersContent }) {
             image={content.finale.polaroid}
             rotate={-2.5}
             float
-            priority
+            preload
             sizes="(max-width: 640px) 62vw, 17rem"
           />
         </motion.div>

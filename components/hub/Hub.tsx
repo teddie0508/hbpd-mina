@@ -75,7 +75,7 @@ export function Hub({ content }: { content: HubContent }) {
                       width={288}
                       height={288}
                       className="relative size-full object-contain drop-shadow-[0_6px_16px_rgba(0,0,0,0.35)]"
-                      priority={i === 0}
+                      preload={i === 0}
                     />
                   ) : (
                     <IconPlaceholder label={option.label} />

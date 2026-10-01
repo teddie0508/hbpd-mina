@@ -324,7 +324,7 @@ function GalleryPhoto({
         fill
         sizes={GALLERY_SIZES}
         quality={90}
-        priority
+        preload
         className="pointer-events-none object-cover select-none"
       />
     </motion.div>

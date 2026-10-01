@@ -53,7 +53,7 @@ export function PolaroidFan({ photos }: { photos: ImageAsset[] }) {
             rotate={ROTATE[i]}
             float
             floatDelay={i * 0.6}
-            priority={i < 2}
+            preload={i < 2}
             sizes="(max-width: 640px) 46vw, 16rem"
           />
         </motion.div>

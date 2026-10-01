@@ -13,7 +13,15 @@ import {
 } from "@/lib/gate";
 import { addEntry } from "@/lib/inbox";
 import { matchesAnswer } from "@/lib/passphrase";
-import { blockedFor, ipFromHeaders, recordFailure } from "@/lib/rate-limit";
+import {
+  blockedFor,
+  ipFromHeaders,
+  recordFailure,
+  recordSuccess,
+} from "@/lib/rate-limit";
+
+/** Gõ sai bao nhiêu lần trong 10 phút thì nghỉ. Rộng tay: đây là trò vui. */
+const MAX_PASS_TRIES = 30;
 
 /**
  * Kiểm tên gõ ở trang bìa.
@@ -30,7 +38,17 @@ export async function tryPassphrase(guess: string): Promise<boolean> {
 
   // Tắt lớp này ở /customize thì coi như ai gõ gì cũng qua.
   if (!enabled) return true;
-  if (!matchesAnswer(guess, answers)) return false;
+
+  // Danh sách đáp án là tên và biệt danh, đoán mò vài trăm lần là ra — nên
+  // vẫn phải có chặn, chỉ là để rất rộng so với ô mật khẩu ở /customize.
+  const key = `pass:${ipFromHeaders(await headers())}`;
+  if (blockedFor(key) > 0) return false;
+
+  if (!matchesAnswer(guess, answers)) {
+    recordFailure(key, Date.now(), MAX_PASS_TRIES);
+    return false;
+  }
+  recordSuccess(key);
 
   (await cookies()).set(PASS_COOKIE, "1", {
     path: "/",

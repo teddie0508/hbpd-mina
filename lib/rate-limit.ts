@@ -69,6 +69,12 @@ export function blockedFor(key: string, now = Date.now()): number {
 export function recordFailure(
   key: string,
   now = Date.now(),
+  /**
+   * Cho sai bao nhiêu lần rồi mới khoá. Mặc định 10 cho ô mật khẩu
+   * /customize; lớp hỏi tên của Mina để rộng hơn nhiều, vì đó là trò tạo bất
+   * ngờ — khoá nhầm người mình yêu đúng đêm sinh nhật mới là hỏng.
+   */
+  max = MAX_FAILS,
 ): { blockedMs: number; remaining: number } {
   prune(now);
 
@@ -79,7 +85,7 @@ export function recordFailure(
   }
 
   entry.fails += 1;
-  if (entry.fails >= MAX_FAILS) {
+  if (entry.fails >= max) {
     entry.blockedUntil = now + BLOCK_MS;
     // Hết khoá thì được thử lại đủ 10 lần, không bị khoá tiếp ngay lần đầu.
     entry.fails = 0;
@@ -88,7 +94,7 @@ export function recordFailure(
 
   return {
     blockedMs: blockedFor(key, now),
-    remaining: MAX_FAILS - entry.fails,
+    remaining: max - entry.fails,
   };
 }
 

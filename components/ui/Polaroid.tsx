@@ -22,7 +22,7 @@ export function Polaroid({
   rotate = 0,
   className,
   sizes = "(max-width: 640px) 60vw, 320px",
-  priority = false,
+  preload = false,
   float = false,
   floatDelay = 0,
 }: {
@@ -32,7 +32,7 @@ export function Polaroid({
   rotate?: number;
   className?: string;
   sizes?: string;
-  priority?: boolean;
+  preload?: boolean;
   /** Trôi lên xuống rất chậm, cho ảnh có vẻ đang lơ lửng. */
   float?: boolean;
   floatDelay?: number;
@@ -68,7 +68,7 @@ export function Polaroid({
           alt={image.alt}
           fill
           sizes={sizes}
-          priority={priority}
+          preload={preload}
           quality={90}
           className="object-cover"
         />
