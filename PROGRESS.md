@@ -11,6 +11,10 @@ Cập nhật: 11/09/2026. Sinh nhật: **02/11/2026**.
 | Dữ liệu xuống trình duyệt | Không bao giờ truyền cả `SiteContent` xuống client component. Mỗi màn chỉ nhận đúng phần của mình; trang bìa nhận `LandingData` qua `forLanding()` (danh sách cho phép, không có đáp án mật khẩu, không có lời nhắn/ảnh). Còn khoá thì layout cắt luôn danh sách nhạc |
 | Lưu từ /customize | Kiểm cấu trúc bằng `validateContent()` + chống ghi đè: gửi kèm `updatedAt` của bản đang sửa, trên kho có bản **mới hơn** thì báo xung đột, cho chọn "Tải bản mới nhất" hoặc "Vẫn lưu đè" |
 | Đăng nhập /customize | Sai 10 lần trong 10 phút → khoá 10 phút theo IP (bộ nhớ trong tiến trình, xem bẫy 35) |
+| Dòng thời gian | `message.timeline` — đường mốc "chúng mình" ngay dưới lá thư, sửa trong tab Lời nhắn. Mốc CUỐI tự được làm nổi (chấm to, quầng sáng, chữ lớn hơn) nên xếp sinh nhật xuống cuối. Đường kẻ vẽ dần, chấm nở, chữ trồi lên — tất cả bằng CSS, JS chỉ gắn class qua `useInView` |
+| Thả tim khi chạm | `tapHearts` (tab Chung) — nghe `pointerdown` ở window, bỏ qua khi đang gõ trong ô nhập, giữ tối đa 10 quả cùng lúc. Lớp vẽ `pointer-events-none` nên không chặn thao tác nào |
+| Chữ ký tự viết | Cắt bằng `clip-path` chạy từ trái sang (`ink-write`), KHÔNG phải đổi opacity — lộ dần theo chiều viết mới ra cảm giác ngòi bút chạy |
+| Xem ảnh liên tục | Nút play trong khung xem ảnh phóng to, 4,2 giây một tấm, phím Space bật/tắt. `step` đổi theo tấm đang xem nên mỗi lần sang tấm là hẹn giờ đặt lại — bấm tay giữa chừng không làm tấm kế bị hụt |
 | Hiện dần từng chữ | `WordsReveal` chạy bằng CSS (`word-in`, độ trễ tính từ `--i`), JavaScript chỉ gắn một class khi đoạn văn cuộn tới. Mỗi chữ là một `motion.span` thì lá thư 10 nghìn ký tự = 2410 phần tử motion: đo được 46MB và hơn 2 giây dựng trang, đổi sang CSS còn 24MB và 0,7 giây |
 | Hoạt ảnh lặp vô hạn | CSS keyframes (`drift-y`, `balloon-bob`, `breathe-opacity`, `spin-slow`...), không dùng `motion` — `motion` chạy trên luồng chính |
 | Diễn tập 0h | Tab Chung → cookie `mina_rehearsal` (mốc mở khoá giả) + bật xem như Mina + xoá cookie đã trả lời tên. **Chỉ có tác dụng khi đã đăng nhập** — người ngoài tự đặt cookie này cũng không mở được trang sớm. Nội dung đã lưu không đổi; tự hết sau 15 phút |
@@ -64,6 +68,7 @@ lib/
   inbox.ts                       hộp thư: thư Mina gửi + nhật ký, mỗi mục một tệp
   moments.ts                     ghi nhật ký từ trình duyệt, mỗi loại một lần/tab
   reminder.ts                    dựng tệp .ics và link Google Calendar (app/api/reminder)
+  useInView.ts                   "khối đã cuộn tới chưa" — dùng cho hiệu ứng chạy bằng CSS
   paper-sound.ts                 tiếng giấy mở phong bì bằng Web Audio
   rate-limit.ts  useFocusTrap.ts  gate.ts (khoá, hỏi tên, diễn tập)  passphrase.ts  blob-paths.ts
   {fonts,theme,auth,placeholder,bouquet,crop,text,cx}.ts

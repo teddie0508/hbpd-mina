@@ -1,6 +1,8 @@
 "use client";
 
 import { WordsReveal } from "@/components/ui/WordsReveal";
+import { cx } from "@/lib/cx";
+import { useInView } from "@/lib/useInView";
 
 /** Một bông hoa nhỏ: năm cánh quanh một nhuỵ. */
 function Blossom({
@@ -157,6 +159,8 @@ export function Letter({
   paragraphs: string[];
   signature: string;
 }) {
+  // Chữ ký lộ dần từ trái sang khi cuộn tới, như ngòi bút đang chạy.
+  const [kyRef, kyHien] = useInView<HTMLSpanElement>();
   return (
     <article
       className="letter-paper relative mx-auto max-w-2xl overflow-hidden rounded-[3px] shadow-[0_26px_60px_-26px_rgba(0,0,0,0.8)]"
@@ -192,7 +196,9 @@ export function Letter({
 
         {signature ? (
           <p className="font-accent text-ink/70 text-right text-[calc(clamp(1.05rem,3.8vw,1.45rem)*var(--fz-accent,1))] leading-[var(--rule)]">
-            {signature}
+            <span ref={kyRef} className={cx("ink-write", kyHien && "ink-in")}>
+              {signature}
+            </span>
           </p>
         ) : null}
       </div>

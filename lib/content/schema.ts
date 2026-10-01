@@ -195,6 +195,28 @@ export interface HubContent {
   typography: TypeSet;
 }
 
+/**
+ * Một cột mốc trên dòng thời gian ở cuối trang Lời nhắn.
+ *
+ * Ngày để kiểu chữ tự do ("19/08", "Tháng 8, 2026") chứ không phải ô chọn
+ * ngày: đây là chữ để đọc, không phải dữ liệu để tính toán.
+ */
+export interface TimelineEntry {
+  id: string;
+  date: string;
+  title: string;
+  /** Vài dòng kể thêm. Để trống cũng được. */
+  note: string;
+  /** Ảnh nhỏ nghiêng bên cạnh mốc. null = chỉ có chữ. */
+  photo: ImageAsset | null;
+}
+
+export interface TimelineContent {
+  enabled: boolean;
+  heading: string;
+  entries: TimelineEntry[];
+}
+
 export interface MessageContent {
   /** Polaroid xếp chồng ở đầu trang. Tối đa MAX_MESSAGE_PHOTOS. */
   photos: ImageAsset[];
@@ -202,6 +224,8 @@ export interface MessageContent {
   /** Ngăn đoạn bằng dòng trống. */
   body: string;
   signature: string;
+  /** Đường mốc "chúng mình", nằm ngay dưới lá thư. */
+  timeline: TimelineContent;
   fonts: FontSet;
   typography: TypeSet;
 }
@@ -340,6 +364,8 @@ export interface SiteContent {
   music: MusicContent;
   teddie: TeddieContent;
   waitingTeddie: WaitingTeddieContent;
+  /** Chạm vào bất cứ đâu là một trái tim nhỏ bay lên. */
+  tapHearts: boolean;
 }
 
 /** Lớp hỏi tên, bỏ danh sách đáp án. */
@@ -407,6 +433,7 @@ export const MAX_BOARD_PHOTOS = 8;
 export const MAX_FILMSTRIP_PHOTOS = 6;
 export const MAX_BOARDS = 6;
 export const MAX_TRACKS = 12;
+export const MAX_TIMELINE_ENTRIES = 8;
 export const MAX_WAITING_TEDDIE_IMAGES = 8;
 export const MAX_WAITING_TEDDIE_LINES = 60;
 /** Thư Mina gửi lại: đủ dài cho vài đoạn, không đủ để ai đó đổ rác vào kho. */
@@ -476,6 +503,7 @@ export const SLOT_ASPECT = {
   boardPhoto: "1:1",
   boardBackground: "16:9",
   finalePolaroid: "4:5",
+  timelinePhoto: "4:5",
   teddie: "1:1",
 } as const satisfies Record<string, AspectRatio>;
 
@@ -499,6 +527,8 @@ export const SLOT_MAX_EDGE: Record<ImageSlot, number> = {
   // Ảnh tải lên từ trước vẫn giữ nguyên; muốn nét hơn thì tải lại tấm đó.
   boardPhoto: 1600,
   filmstrip: 600,
+  // Ảnh mốc rộng nhất khoảng 180 CSS px -> 700 là thừa cho màn Retina.
+  timelinePhoto: 700,
   hubIcon: 512,
   // Gấu vẽ rộng nhất 128 CSS px -> 512 là đủ cho màn Retina, để dư một bậc.
   teddie: 700,

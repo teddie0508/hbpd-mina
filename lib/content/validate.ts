@@ -3,6 +3,7 @@ import {
   MAX_BOARD_PHOTOS,
   MAX_FILMSTRIP_PHOTOS,
   MAX_MESSAGE_PHOTOS,
+  MAX_TIMELINE_ENTRIES,
   MAX_TRACKS,
   MAX_WAITING_TEDDIE_IMAGES,
   MAX_WAITING_TEDDIE_LINES,
@@ -215,6 +216,20 @@ const siteContent = shape({
     heading: text(500),
     body: text(MAX_TEXT),
     signature: text(300),
+    timeline: shape({
+      enabled: bool,
+      heading: text(300),
+      entries: list(
+        shape({
+          id: text(200),
+          date: text(100),
+          title: text(300),
+          note: text(2000),
+          photo: nullable(image),
+        }),
+        MAX_TIMELINE_ENTRIES,
+      ),
+    }),
     ...styled,
   }),
 
@@ -254,6 +269,8 @@ const siteContent = shape({
     }),
     ...styled,
   }),
+
+  tapHearts: bool,
 
   waitingTeddie: shape({
     enabled: bool,

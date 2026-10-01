@@ -11,6 +11,7 @@ import { fontVars } from "@/lib/theme";
 import { toParagraphs } from "@/lib/text";
 
 import { Letter } from "./Letter";
+import { Timeline } from "./Timeline";
 import { PolaroidFan } from "./PolaroidFan";
 
 export function MessageScene({ content }: { content: MessageContent }) {
@@ -42,6 +43,8 @@ export function MessageScene({ content }: { content: MessageContent }) {
         <Reveal delay={0.2} className="mt-10 sm:mt-12">
           <Letter paragraphs={paragraphs} signature={content.signature} />
         </Reveal>
+
+        <Timeline content={content.timeline} />
 
         <div className="mt-16 sm:mt-20">
           <BackLink />

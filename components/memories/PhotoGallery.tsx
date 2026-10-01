@@ -18,6 +18,9 @@ import { useFocusTrap } from "@/lib/useFocusTrap";
 /** Kéo ngang quá chừng này (px) thì tính là muốn lật sang tấm khác. */
 const SWIPE_PX = 70;
 
+/** Chế độ tự chạy: mỗi tấm đứng bấy lâu. Đủ để nhìn kỹ, chưa đủ để sốt ruột. */
+const SLIDE_MS = 4200;
+
 /**
  * Hai chuỗi `sizes` này phải khớp TUYỆT ĐỐI với chỗ dùng tương ứng, nếu không
  * mọi thứ bên dưới đổ vỡ hết:
@@ -28,6 +31,18 @@ const SWIPE_PX = 70;
  */
 export const GALLERY_SIZES = "(max-width: 768px) 92vw, 704px";
 export const THUMB_SIZES = "(max-width: 768px) 44vw, 200px";
+
+function PlayIcon({ playing }: { playing: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className="size-5" aria-hidden>
+      {playing ? (
+        <path d="M9 5.5h2.4v13H9zM12.6 5.5H15v13h-2.4z" />
+      ) : (
+        <path d="M8.5 5.3 19 12 8.5 18.7z" />
+      )}
+    </svg>
+  );
+}
 
 function ArrowIcon({ back = false }: { back?: boolean }) {
   return (
@@ -107,6 +122,9 @@ export function PhotoGallery({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  /** Chế độ tự chạy: ảnh tự sang tấm kế. */
+  const [playing, setPlaying] = useState(false);
+
   const open = index !== null;
   const khungRef = useRef<HTMLDivElement>(null);
   const nutDongRef = useRef<HTMLButtonElement>(null);
@@ -124,13 +142,30 @@ export function PhotoGallery({
     [index, photos.length, onIndex],
   );
 
-  // Phím tắt quen tay: Esc để đóng, mũi tên để lật ảnh.
+  // Đóng rồi thì tắt tự chạy, lần mở sau bắt đầu lại ở trạng thái thường.
+  useEffect(() => {
+    if (!open) setPlaying(false);
+  }, [open]);
+
+  // Tự chạy. `step` đổi theo tấm đang xem nên mỗi lần sang tấm mới là hẹn
+  // giờ được đặt lại từ đầu — bấm tay giữa chừng cũng không làm tấm kế bị hụt.
+  useEffect(() => {
+    if (!open || !playing || photos.length < 2) return;
+    const id = window.setInterval(() => step(1), SLIDE_MS);
+    return () => window.clearInterval(id);
+  }, [open, playing, photos.length, step]);
+
+  // Phím tắt quen tay: Esc để đóng, mũi tên để lật ảnh, Space để tự chạy.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
       else if (e.key === "ArrowLeft") step(-1);
       else if (e.key === "ArrowRight") step(1);
+      else if (e.key === " ") {
+        e.preventDefault();
+        setPlaying((p) => !p);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -241,6 +276,13 @@ export function PhotoGallery({
                 </span>
                 <RoundButton label="Ảnh sau" onClick={() => step(1)}>
                   <ArrowIcon />
+                </RoundButton>
+                <RoundButton
+                  label={playing ? "Dừng tự chạy" : "Xem liên tục"}
+                  onClick={() => setPlaying((p) => !p)}
+                  className={playing ? "border-gold/60 text-gold" : "ml-1"}
+                >
+                  <PlayIcon playing={playing} />
                 </RoundButton>
               </div>
             ) : null}

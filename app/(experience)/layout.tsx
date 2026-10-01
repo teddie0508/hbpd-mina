@@ -1,4 +1,5 @@
 import { MiniPlayer } from "@/components/player/MiniPlayer";
+import { TapHearts } from "@/components/ui/TapHearts";
 import { AudioProvider } from "@/components/providers/AudioProvider";
 import { getContent } from "@/lib/content/store";
 import { isLocked } from "@/lib/gate";
@@ -31,6 +32,7 @@ export default async function ExperienceLayout({
         {children}
       </div>
       <MiniPlayer />
+      {content.tapHearts ? <TapHearts /> : null}
     </AudioProvider>
   );
 }

@@ -5,6 +5,7 @@ import {
   MAX_BOARD_PHOTOS,
   MAX_FILMSTRIP_PHOTOS,
   MAX_MESSAGE_PHOTOS,
+  MAX_TIMELINE_ENTRIES,
   MAX_TRACKS,
   MAX_WAITING_TEDDIE_IMAGES,
   MAX_WAITING_TEDDIE_LINES,
@@ -15,6 +16,7 @@ import {
   type MemoriesContent,
   type MemoryBoard,
   type MessageContent,
+  type TimelineContent,
   type MusicContent,
   type PassphraseContent,
   type TeddieContent,
@@ -99,6 +101,11 @@ export function GeneralPanel({
             onChange={(documentTitle) => onChange({ documentTitle })}
           />
         </Field>
+        <Toggle
+          checked={content.tapHearts}
+          onChange={(tapHearts) => onChange({ tapHearts })}
+          label="Chạm vào màn hình là có tim bay lên"
+        />
         <Field
           label="Mô tả khi gửi link"
           hint="Dòng nhỏ dưới tiêu đề khi dán link vào Messenger, Zalo... Ai có link cũng thấy, kể cả trước ngày mở, nên đừng viết gì lộ bất ngờ. Messenger và Zalo nhớ thẻ xem trước khá lâu: đổi xong có thể phải chờ họ cập nhật."
@@ -471,6 +478,165 @@ export function HubPanel({
   );
 }
 
+/**
+ * Dòng thời gian ở cuối trang Lời nhắn.
+ *
+ * Ngày để ô chữ tự do chứ không phải ô chọn ngày: đây là chữ để đọc ("19/08",
+ * "Tháng 8, 2026"), không phải dữ liệu để máy tính toán.
+ */
+function TimelineFields({
+  value,
+  onChange,
+}: {
+  value: TimelineContent;
+  onChange: (patch: Partial<TimelineContent>) => void;
+}) {
+  const suaMoc = (
+    id: string,
+    patch: Partial<TimelineContent["entries"][number]>,
+  ) =>
+    onChange({
+      entries: value.entries.map((e) => (e.id === id ? { ...e, ...patch } : e)),
+    });
+
+  const doiCho = (index: number, delta: number) => {
+    const dich = index + delta;
+    if (dich < 0 || dich >= value.entries.length) return;
+    const next = [...value.entries];
+    [next[index], next[dich]] = [next[dich], next[index]];
+    onChange({ entries: next });
+  };
+
+  return (
+    <SectionCard
+      title="Dòng thời gian"
+      description="Nằm ngay dưới lá thư: một đường kẻ dọc, mỗi mốc là một chấm, cuộn tới đâu vẽ tới đó. Mốc CUỐI CÙNG được làm nổi hơn hẳn — để dành cho ngày sinh nhật là đẹp nhất."
+    >
+      <Toggle
+        checked={value.enabled}
+        onChange={(enabled) => onChange({ enabled })}
+        label="Hiện dòng thời gian"
+      />
+
+      {value.enabled ? (
+        <>
+          <Field label="Tiêu đề">
+            <TextInput
+              value={value.heading}
+              onChange={(heading) => onChange({ heading })}
+            />
+          </Field>
+
+          {value.entries.length === 0 ? (
+            <p className="text-mist/50 text-xs">
+              Chưa có mốc nào — bấm nút dưới để thêm.
+            </p>
+          ) : null}
+
+          <ol className="space-y-4">
+            {value.entries.map((entry, i) => (
+              <li
+                key={entry.id}
+                className="border-mist/15 grid gap-4 rounded-xl border border-dashed p-4 sm:grid-cols-[9rem_1fr]"
+              >
+                <div className="space-y-2">
+                  <ImageField
+                    slot="timelinePhoto"
+                    value={entry.photo}
+                    label={`Ảnh mốc ${i + 1}`}
+                    onChange={(photo) => suaMoc(entry.id, { photo })}
+                    onRemove={() => suaMoc(entry.id, { photo: null })}
+                  />
+                  <div className="flex gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => doiCho(i, -1)}
+                      disabled={i === 0}
+                      aria-label="Đưa lên trên"
+                      className="border-mist/20 text-mist/70 hover:text-cream flex-1 rounded border py-1 text-xs transition-colors disabled:opacity-30"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => doiCho(i, 1)}
+                      disabled={i === value.entries.length - 1}
+                      aria-label="Đưa xuống dưới"
+                      className="border-mist/20 text-mist/70 hover:text-cream flex-1 rounded border py-1 text-xs transition-colors disabled:opacity-30"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onChange({
+                          entries: value.entries.filter(
+                            (e) => e.id !== entry.id,
+                          ),
+                        })
+                      }
+                      className="border-mist/20 text-mist/70 flex-1 rounded border py-1 text-xs transition-colors hover:border-red-400/50 hover:text-red-300"
+                    >
+                      Xoá
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Field
+                    label="Ngày"
+                    hint="Gõ tự do: 19/08, hay Tháng 8 năm nay."
+                  >
+                    <TextInput
+                      value={entry.date}
+                      onChange={(date) => suaMoc(entry.id, { date })}
+                    />
+                  </Field>
+                  <Field label="Một dòng tiêu đề">
+                    <TextInput
+                      value={entry.title}
+                      onChange={(title) => suaMoc(entry.id, { title })}
+                    />
+                  </Field>
+                  <Field label="Kể thêm" hint="Để trống cũng được.">
+                    <TextArea
+                      rows={3}
+                      value={entry.note}
+                      onChange={(note) => suaMoc(entry.id, { note })}
+                    />
+                  </Field>
+                </div>
+              </li>
+            ))}
+          </ol>
+
+          <button
+            type="button"
+            onClick={() =>
+              onChange({
+                entries: [
+                  ...value.entries,
+                  {
+                    id: crypto.randomUUID(),
+                    date: "",
+                    title: "",
+                    note: "",
+                    photo: null,
+                  },
+                ],
+              })
+            }
+            disabled={value.entries.length >= MAX_TIMELINE_ENTRIES}
+            className="border-mist/25 text-cream/85 hover:border-gold/50 hover:text-gold w-full rounded-lg border border-dashed py-2.5 text-sm transition-colors disabled:opacity-35"
+          >
+            Thêm mốc ({value.entries.length}/{MAX_TIMELINE_ENTRIES})
+          </button>
+        </>
+      ) : null}
+    </SectionCard>
+  );
+}
+
 export function MessagePanel({
   value,
   onChange,
@@ -521,6 +687,13 @@ export function MessagePanel({
           sampleText={value.heading || SAMPLE}
         />
       </SectionCard>
+
+      <TimelineFields
+        value={value.timeline}
+        onChange={(patch) =>
+          onChange({ timeline: { ...value.timeline, ...patch } })
+        }
+      />
     </div>
   );
 }

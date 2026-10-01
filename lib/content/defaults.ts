@@ -108,6 +108,13 @@ export const DEFAULT_CONTENT: SiteContent = {
       "Chúc em một tuổi mới thật nhiều sức khoẻ, thật nhiều tiếng cười, và luôn được yêu thương đúng như cách em xứng đáng.",
     ].join("\n\n"),
     signature: "— của em",
+    // Để TRỐNG có chủ ý: bản deploy của bạn sẽ nhận giá trị mặc định này cho
+    // trường mới, nên nhồi sẵn mốc mẫu là trang thật hiện ra chữ của tôi.
+    timeline: {
+      enabled: true,
+      heading: "Chúng mình, tính tới hôm nay",
+      entries: [],
+    },
     fonts: { heading: "dancing", body: "mali", accent: "cormorant" },
     typography: baseType(),
   },
@@ -210,6 +217,8 @@ export const DEFAULT_CONTENT: SiteContent = {
       "Hôm nay em ăn gì chưa đó?",
     ],
   },
+
+  tapHearts: true,
 
   music: {
     startOnEnvelopeOpen: true,
