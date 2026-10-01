@@ -1,3 +1,5 @@
+import type { FontSet } from "./content/schema";
+
 /**
  * Danh sách font cho phép chọn ở /customize.
  * Font được nạp động bằng <link> Google Fonts dựng từ đúng những key đang dùng,
@@ -351,3 +353,28 @@ export const FONT_CATEGORY_LABEL: Record<FontCategory, string> = {
   serif: "Có chân",
   sans: "Không chân",
 };
+
+/**
+ * Font có dấu tiếng Việt gần nhất trong một bộ font.
+ *
+ * Nhiều font script đẹp nhất chỉ có bảng Latin — hợp cho tiêu đề tiếng Anh
+ * như "Happy Birthday, Mina", nhưng đặt chữ tiếng Việt lên thì mỗi chữ có
+ * dấu lại rơi sang một font khác, nhìn như chắp vá. Ưu tiên mượn ngay font
+ * khác trong CHÍNH bộ đó để giữ đúng không khí của trang, cùng lắm mới lấy
+ * Be Vietnam Pro.
+ */
+export function vietnameseFallback(fonts: FontSet): string {
+  const thu = [fonts.accent, fonts.body, fonts.heading];
+  return thu.find((key) => getFont(key).vietnamese) ?? "be-vietnam";
+}
+
+/** Bộ font đã thay những vai trò không có dấu bằng font có dấu. */
+export function vietnameseFontSet(fonts: FontSet): FontSet {
+  const duPhong = vietnameseFallback(fonts);
+  const an_toan = (key: string) => (getFont(key).vietnamese ? key : duPhong);
+  return {
+    heading: an_toan(fonts.heading),
+    body: an_toan(fonts.body),
+    accent: an_toan(fonts.accent),
+  };
+}

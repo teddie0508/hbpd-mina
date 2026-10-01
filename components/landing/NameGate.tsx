@@ -13,6 +13,7 @@ import { createPortal } from "react-dom";
 import { tryPassphrase } from "@/app/(experience)/actions";
 import type { FontSet, PublicPassphrase, TypeSet } from "@/lib/content/schema";
 import { cx } from "@/lib/cx";
+import { vietnameseFontSet } from "@/lib/fonts";
 import { fontVars } from "@/lib/theme";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 
@@ -149,7 +150,11 @@ function GatePanel({
   return (
     <motion.div
       ref={khungRef}
-      style={fontVars(fonts, typography)}
+      // Chữ trong panel này luôn là tiếng Việt ("Khoan đã nào...", dòng gợi
+      // ý, nút bấm), nên vai trò nào đang dùng font không dấu thì đổi sang
+      // font có dấu. Tiêu đề trang bìa thường để font script chỉ có Latin —
+      // đẹp cho "Happy Birthday, Mina", nhưng chữ có dấu thì vỡ.
+      style={fontVars(vietnameseFontSet(fonts), typography)}
       className="fixed inset-0 z-[70] grid place-items-center px-6"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -208,7 +213,7 @@ function GatePanel({
             autoCapitalize="off"
             spellCheck={false}
             enterKeyHint="go"
-            className="border-ink/20 bg-cream/60 text-ink placeholder:text-ink/35 focus:border-gold focus:ring-gold/35 w-full rounded-xl border px-4 py-3 text-center text-[calc(clamp(1rem,4vw,1.15rem)*var(--fz-body,1))] outline-none focus:ring-2"
+            className="font-body border-ink/20 bg-cream/60 text-ink placeholder:text-ink/35 focus:border-gold focus:ring-gold/35 w-full rounded-xl border px-4 py-3 text-center text-[calc(clamp(1rem,4vw,1.15rem)*var(--fz-body,1))] outline-none focus:ring-2"
           />
         </motion.div>
 
@@ -234,7 +239,7 @@ function GatePanel({
         <button
           type="submit"
           disabled={checking || !value.trim()}
-          className="bg-ink/90 text-cream hover:bg-ink focus-visible:ring-gold mt-5 w-full rounded-xl px-4 py-3 text-sm tracking-wide transition-colors outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40"
+          className="font-body bg-ink/90 text-cream hover:bg-ink focus-visible:ring-gold mt-5 w-full rounded-xl px-4 py-3 text-sm tracking-wide transition-colors outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {checking ? "Đang mở..." : config.submitLabel}
         </button>

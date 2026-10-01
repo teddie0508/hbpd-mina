@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-import { fontStack } from "./fonts";
+import { fontStack, vietnameseFallback } from "./fonts";
 import type {
   FontSet,
   SiteContent,
@@ -56,5 +56,13 @@ export function usedFontKeys(content: SiteContent): string[] {
     content.flowers.fonts,
     content.teddie.fonts,
   ];
-  return [...new Set(sets.flatMap((s) => [s.heading, s.body, s.accent]))];
+  // Panel hỏi tên luôn là chữ tiếng Việt nên nó tự đổi sang font có dấu
+  // (xem NameGate). Font đó phải có trong danh sách tải, không thì đổi xong
+  // lại rơi về font mặc định của hệ điều hành — y như lỗi cũ.
+  return [
+    ...new Set([
+      ...sets.flatMap((s) => [s.heading, s.body, s.accent]),
+      vietnameseFallback(content.landing.fonts),
+    ]),
+  ];
 }
