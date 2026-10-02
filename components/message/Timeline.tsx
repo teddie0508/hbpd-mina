@@ -93,9 +93,16 @@ function Row({
         ) : null}
 
         {entry.title.trim() ? (
+          /*
+            Font ĐOẠN VĂN chứ không phải font tiêu đề. Tiêu đề của trang Lời
+            nhắn thường để chữ viết tay (mặc định Dancing Script) — đẹp ở cỡ
+            lớn, nhưng một dòng tiêu đề mốc chỉ cỡ 1,2rem thì nét nghiêng và
+            dấu tiếng Việt dính vào nhau, đọc rất mệt. Thứ bậc vẫn rõ nhờ cỡ
+            chữ to hơn và mực đậm hơn phần kể bên dưới.
+          */
           <h3
             className={cx(
-              "font-heading text-cream mt-1 leading-snug text-balance",
+              "font-body text-cream mt-1 leading-snug text-balance",
               last
                 ? "text-[calc(clamp(1.3rem,5.2vw,1.8rem)*var(--fz-heading,1))]"
                 : "text-[calc(clamp(1.1rem,4.4vw,1.45rem)*var(--fz-heading,1))]",
